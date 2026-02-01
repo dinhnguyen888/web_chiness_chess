@@ -1,90 +1,104 @@
-import * as React from 'react'
-import * as Redux from 'redux'
-import {Modal, Radio} from 'antd'
-import {style} from 'typestyle'
-import {onModelOKAction, onModelCancelAction} from '../../models/buttonClick'
+import React, { useState } from 'react';
+import { Modal, Radio } from 'antd';
+import { useAppDispatch } from '../../hooks';
+import { onModelOK, onModelCancel } from '../../models/chessSlice';
 
 const RadioButton = Radio.Button;
 const RadioGroup = Radio.Group;
 
 interface StartModelProps {
-  visible: boolean
-  dispatch: Redux.Dispatch<any>
+  visible: boolean;
 }
 
-//开始游戏时的相关选项
-export interface gameOptions { 
-  mode: number //游戏模式
-  difficulty: number //游戏难度
-  side: number  //出棋顺序
-  color: string //本方颜色
+export interface GameOptions {
+  mode: number;
+  difficulty: number;
+  side: number;
+  color: string;
 }
 
-//点击开始游戏后的对话框组件，用于设置游戏选项
-export default class StartModel extends React.Component<StartModelProps, any> {
-   
-  options:gameOptions = {mode:1, difficulty:2, side:1, color:'r'}
+const StartModel: React.FC<StartModelProps> = ({ visible }) => {
+  const dispatch = useAppDispatch();
+  const [confirmLoading, setConfirmLoading] = useState(false);
+  const [options, setOptions] = useState<GameOptions>({
+    mode: 1,
+    difficulty: 2,
+    side: 1,
+    color: 'r'
+  });
 
-  constructor(props) {
-    super(props)
-    this.state={confirmLoading:false} //异步关闭模态对话框
-  }
+  const handleOk = () => {
+    setConfirmLoading(true);
+    setTimeout(() => {
+      setConfirmLoading(false);
+      dispatch(onModelOK(options));
+    }, 1000);
+  };
 
-  handleOKButton() {
-    this.setState({confirmLoading:true})
-    setTimeout(()=>{
-      this.setState({confirmLoading:false})
-      this.props.dispatch(onModelOKAction(this.options))
-    },1000)
-  }
+  const handleCancel = () => {
+    dispatch(onModelCancel());
+  };
 
-  render() {
-    const ButtonStyle = style({
-      margin: '0 15px'
-    })
-    
-    const RadioButtonStyle = {
-      margin: '0 15px'
-    }
-    return (
-      <Modal
-        title={<h2><strong>游戏选项</strong></h2>}
-        visible={this.props.visible}
-        onOk={()=>{this.handleOKButton()}}
-        onCancel={()=>{this.props.dispatch(onModelCancelAction())}}
-        confirmLoading={this.state.confirmLoading}
-      >
-        <div style={{fontSize:16}}>
-          对战模式：
-          <RadioGroup onChange={(e)=>{this.options.mode= (e as any).target.value}} defaultValue={1} size='large'>
-            <RadioButton value={1} style={RadioButtonStyle}>人机对战</RadioButton>
-            <RadioButton value={2} style={RadioButtonStyle}>机机对战</RadioButton>
-            <RadioButton value={3} style={RadioButtonStyle}>人人对战</RadioButton>
-          </RadioGroup>
-        </div>
-        <div style={{fontSize:16,marginTop:16}}>
-          游戏难度：
-          <RadioGroup onChange={(e)=>{this.options.difficulty= (e as any).target.value}} defaultValue={2} size='large'>
-            <RadioButton value={2} style={RadioButtonStyle}>菜鸟级</RadioButton>
-            <RadioButton value={3} style={RadioButtonStyle}>入门级</RadioButton>
-            <RadioButton value={4} style={RadioButtonStyle}>大师级</RadioButton>
-          </RadioGroup>
-        </div>
-        <div style={{fontSize:16,marginTop:16}}>
-          出棋顺序：
-          <RadioGroup onChange={(e)=>{this.options.side= (e as any).target.value}} defaultValue={1} size='large'>
-            <RadioButton value={1} style={RadioButtonStyle}>红方先行</RadioButton>
-            <RadioButton value={-1} style={RadioButtonStyle}>黑方先行</RadioButton>
-          </RadioGroup>
-        </div>
-        <div style={{fontSize:16,marginTop:16}}>
-          本方颜色：
-          <RadioGroup onChange={(e)=>{this.options.color= (e as any).target.value}} defaultValue={'r'} size='large'>
-            <RadioButton value={'r'} style={RadioButtonStyle}>红棋</RadioButton>
-            <RadioButton value={'b'} style={RadioButtonStyle}>黑棋</RadioButton>
-          </RadioGroup>
-        </div>
-      </Modal>
-    )
-  }
-}
+  const radioButtonStyle = { margin: '0 15px' };
+
+  return (
+    <Modal
+      title={<h2><strong>Tùy chọn trò chơi</strong></h2>}
+      open={visible}
+      onOk={handleOk}
+      onCancel={handleCancel}
+      confirmLoading={confirmLoading}
+      okText="Xác nhận"
+      cancelText="Hủy"
+    >
+      <div style={{ fontSize: 16 }}>
+        Chế độ chơi:
+        <RadioGroup 
+          onChange={(e) => setOptions({ ...options, mode: e.target.value })} 
+          value={options.mode} 
+          size='large'
+        >
+          <RadioButton value={1} style={radioButtonStyle}>Người vs Máy</RadioButton>
+          <RadioButton value={2} style={radioButtonStyle}>Máy vs Máy</RadioButton>
+          <RadioButton value={3} style={radioButtonStyle}>Người vs Người</RadioButton>
+        </RadioGroup>
+      </div>
+      <div style={{ fontSize: 16, marginTop: 16 }}>
+        Độ khó:
+        <RadioGroup 
+          onChange={(e) => setOptions({ ...options, difficulty: e.target.value })} 
+          value={options.difficulty} 
+          size='large'
+        >
+          <RadioButton value={2} style={radioButtonStyle}>Gà mờ</RadioButton>
+          <RadioButton value={3} style={radioButtonStyle}>Nhập môn</RadioButton>
+          <RadioButton value={4} style={radioButtonStyle}>Bậc thầy</RadioButton>
+        </RadioGroup>
+      </div>
+      <div style={{ fontSize: 16, marginTop: 16 }}>
+        Thứ tự đi:
+        <RadioGroup 
+          onChange={(e) => setOptions({ ...options, side: e.target.value })} 
+          value={options.side} 
+          size='large'
+        >
+          <RadioButton value={1} style={radioButtonStyle}>Đỏ đi trước</RadioButton>
+          <RadioButton value={-1} style={radioButtonStyle}>Đen đi trước</RadioButton>
+        </RadioGroup>
+      </div>
+      <div style={{ fontSize: 16, marginTop: 16 }}>
+        Màu quân:
+        <RadioGroup 
+          onChange={(e) => setOptions({ ...options, color: e.target.value })} 
+          value={options.color} 
+          size='large'
+        >
+          <RadioButton value={'r'} style={radioButtonStyle}>Quân Đỏ</RadioButton>
+          <RadioButton value={'b'} style={radioButtonStyle}>Quân Đen</RadioButton>
+        </RadioGroup>
+      </div>
+    </Modal>
+  );
+};
+
+export default StartModel;

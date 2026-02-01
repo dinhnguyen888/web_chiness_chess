@@ -1,59 +1,47 @@
-import * as React from 'react'
-import * as Redux from 'redux'
-import {style} from 'typestyle'
+import React from 'react';
+import { style } from 'typestyle';
+import { useAppDispatch } from '../../hooks';
+import { chessClick, type ChessProps as ChessModelProps } from '../../models/chessSlice';
 
-import {chessClickAction} from '../../models/chessClick'
-
-declare function require(url: string): string
-
-export interface ChessProps {
-  name: string  //棋子id
-  type: string  //棋子类型
-  side: 1|-1  //棋子阵营
-  position: [number, number]  //棋子在棋盘上的位置
+export interface ChessProps extends ChessModelProps {
+  color: string;
+  control: ChessModelProps | null;
 }
 
-interface OtherProps {
-  color: string  //本方棋子颜色
-  control: ChessProps  //当前操控的棋子
-  dispatch: Redux.Dispatch<any>
-}
+export const chessSize = 54;
+export const spacexy = 57;
 
-export const chessSize = 54 //棋子大小
-export const spacexy = 57 //棋子间隔大小
+const Chess: React.FC<ChessProps> = (props) => {
+  const dispatch = useAppDispatch();
 
+  const getImagePath = (type: string, side: number, color: string) => {
+    const c = side === 1 ? (color === 'r' ? 'r' : 'b') : (color === 'b' ? 'r' : 'b');
+    // Using dynamic import or URL
+    return new URL(`../../assets/style/${c}_${type}.png`, import.meta.url).href;
+  };
 
-//棋子组件
-export default class Chess extends React.Component<ChessProps&OtherProps, any> {
+  const ChessStyle = style({
+    position: 'absolute',
+    backgroundImage: `url(${getImagePath(props.type, props.side, props.color)})`,
+    width: chessSize,
+    height: chessSize,
+    top: -3 + props.position[0] * spacexy,
+    left: -3 + props.position[1] * spacexy,
+    opacity: props.control && props.control.name === props.name ? 0.8 : 1,
+    cursor: 'pointer',
+    backgroundSize: 'contain',
+    zIndex: 10
+  });
 
-  //根据棋子类型选择背景图片
-  chooseBackGround(type: string, side: number, color:string) { 
-    let bg: string = null
-    if (side == 1) {
-      bg = require(`../../assets/style/${color=='r'?'r':'b'}_${type}.png`)
-    } else {
-      bg = require(`../../assets/style/${color=='b'?'r':'b'}_${type}.png`)
-    }
-    return bg
-  }
+  return (
+    <div
+      className={ChessStyle}
+      onClick={(e) => {
+        e.stopPropagation();
+        dispatch(chessClick(props));
+      }}
+    />
+  );
+};
 
-  render() {
-    const ChessStyle = style({
-      position: 'absolute',
-      backgroundImage: `url(${this.chooseBackGround(this.props.type, this.props.side, this.props.color)})`,
-      width: chessSize,
-      height: chessSize,
-      top: -3+this.props.position[0]*spacexy,
-      left: -3+this.props.position[1]*spacexy,
-      opacity: this.props.control && this.props.control.name == this.props.name?0.8:1,
-    })
-    return (
-      <div className={ChessStyle} onClick={(e)=>{
-        e.stopPropagation()
-        this.props.dispatch(chessClickAction(this.props))}
-      }>
-      </div>
-    )
-  }
-}
-
+export default Chess;

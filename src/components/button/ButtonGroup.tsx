@@ -1,48 +1,94 @@
-import * as React from 'react'
-import * as Redux from 'redux'
-import {Button} from 'antd'
-import {style} from 'typestyle'
-import {startClickAction, changeSideAction, toggleAIAction, clearChessAction, showHintAction, regretMoveAction} from '../../models/buttonClick'
-import StartModel from './StartModel'
+import React from 'react';
+import { Button } from 'antd';
+import { style } from 'typestyle';
+import { useAppDispatch } from '../../hooks';
+import {
+  startClick, changeSide, toggleAI, clearChess, showHint, regretMove
+} from '../../models/chessSlice';
+import StartModel from './StartModel';
 
 interface ButtonGroupProps {
-  mode: number //游戏模式
-  side: number //当前下棋一方
-  showModel: boolean  //是否显示模态对话框
-  history: string[][][]
-  dispatch: Redux.Dispatch<any>
+  mode: number;
+  side: number;
+  showModel: boolean;
+  historyLength: number;
 }
 
-//与游戏相关的按钮组件
-export default class ButtonGroup extends React.Component<ButtonGroupProps, any> {
+const ButtonGroup: React.FC<ButtonGroupProps> = ({ mode, side, showModel, historyLength }) => {
+  const dispatch = useAppDispatch();
 
-  renderThirdButton() {
-    const ButtonStyle = style({
-      margin: '0 15px'
-    })
-    if (this.props.mode == 2) {
-      //模式为2代表人机对战，side的绝对值为2代表机机对战的暂停状态
-      return <Button size='large' onClick={()=>{this.props.dispatch(toggleAIAction())}} className={ButtonStyle} disabled={(this.props.side==0)}>{Math.abs(this.props.side)==2?'恢复':'暂停'}</Button>
+  const ButtonStyle = style({
+    margin: '0 15px'
+  });
+
+  const renderThirdButton = () => {
+    if (mode === 2) {
+      // 模式为2代表人机对弈的某种特殊情况 hoặc machine vs machine
+      return (
+        <Button
+          size='large'
+          onClick={() => dispatch(toggleAI())}
+          className={ButtonStyle}
+          disabled={side === 0}
+        >
+          {Math.abs(side) === 2 ? 'Tiếp tục' : 'Tạm dừng'}
+        </Button>
+      );
     } else {
-      return <Button size='large' className={ButtonStyle} disabled={this.props.side==0||this.props.history.length==1} onClick={()=>{this.props.dispatch(regretMoveAction())}}>悔棋</Button>
+      return (
+        <Button
+          size='large'
+          className={ButtonStyle}
+          disabled={side === 0 || historyLength <= 1}
+          onClick={() => dispatch(regretMove())}
+        >
+          Đi lại
+        </Button>
+      );
     }
-  }
+  };
 
-  render() {
-    const ButtonStyle = style({
-      margin: '0 15px'
-    })
-    return (
-      <div>
-        <div style={{height:'100%', width:'100%'}}>
-          <Button type='primary' size='large' className={ButtonStyle} disabled={(this.props.mode==2)&&(Math.abs(this.props.side)==1)} onClick={()=>{this.props.dispatch(startClickAction())}}>开始游戏</Button>
-          <Button size='large' className={ButtonStyle} disabled={(this.props.mode==2)||(this.props.side==0)} onClick={()=>{this.props.dispatch(showHintAction())}}>提示</Button>
-          {this.renderThirdButton()}
-          <Button size='large' className={ButtonStyle} disabled={(this.props.side==0)||(this.props.mode==2)&&(Math.abs(this.props.side)==1)} onClick={()=>{this.props.dispatch(changeSideAction())}}>换边</Button>
-          <Button size='large' className={ButtonStyle} disabled={(this.props.side==0)||(this.props.mode==2)} onClick={()=>{this.props.dispatch(clearChessAction())}}>让子</Button>
-        </div>
-        <StartModel visible={this.props.showModel} dispatch={this.props.dispatch} />
+  return (
+    <div>
+      <div style={{ height: '100%', width: '100%', display: 'flex', justifyContent: 'center' }}>
+        <Button
+          type='primary'
+          size='large'
+          className={ButtonStyle}
+          disabled={(mode === 2) && (Math.abs(side) === 1)}
+          onClick={() => dispatch(startClick())}
+        >
+          Bắt đầu
+        </Button>
+        <Button
+          size='large'
+          className={ButtonStyle}
+          disabled={(mode === 2) || (side === 0)}
+          onClick={() => dispatch(showHint())}
+        >
+          Gợi ý
+        </Button>
+        {renderThirdButton()}
+        <Button
+          size='large'
+          className={ButtonStyle}
+          disabled={(side === 0) || (mode === 2 && Math.abs(side) === 1)}
+          onClick={() => dispatch(changeSide())}
+        >
+          Đổi bên
+        </Button>
+        <Button
+          size='large'
+          className={ButtonStyle}
+          disabled={(side === 0) || (mode === 2)}
+          onClick={() => dispatch(clearChess())}
+        >
+          Chấp quân
+        </Button>
       </div>
-    )
-  }
-}
+      <StartModel visible={showModel} />
+    </div>
+  );
+};
+
+export default ButtonGroup;
