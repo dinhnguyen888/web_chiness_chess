@@ -113,6 +113,7 @@ const AI: React.FC<AIProps> = ({ treeDepth, board, side, mode, paceHistory }) =>
   useEffect(() => {
     let timer: any;
     const shouldRunAI = () => {
+      if (mode === 5) return false;
       if (mode === 1 && side === -1) return true;
       if (mode === 2 && (side === -1 || side === 1)) return true;
       if (mode > 3) return true; // Hint modes

@@ -22,6 +22,17 @@ const ButtonGroup: React.FC<ButtonGroupProps> = ({ mode, side, showModel, histor
   });
 
   const renderThirdButton = () => {
+    if (mode === 5) {
+      return (
+        <Button
+          size='large'
+          className={ButtonStyle}
+          disabled
+        >
+          Đi lại
+        </Button>
+      );
+    }
     if (mode === 2) {
       // 模式为2代表人机对弈的某种特殊情况 hoặc machine vs machine
       return (
@@ -63,7 +74,7 @@ const ButtonGroup: React.FC<ButtonGroupProps> = ({ mode, side, showModel, histor
         <Button
           size='large'
           className={ButtonStyle}
-          disabled={(mode === 2) || (side === 0)}
+          disabled={(mode === 2) || (mode === 5) || (side === 0)}
           onClick={() => dispatch(showHint())}
         >
           Gợi ý
@@ -72,7 +83,7 @@ const ButtonGroup: React.FC<ButtonGroupProps> = ({ mode, side, showModel, histor
         <Button
           size='large'
           className={ButtonStyle}
-          disabled={(side === 0) || (mode === 2 && Math.abs(side) === 1)}
+          disabled={(side === 0) || (mode === 5) || (mode === 2 && Math.abs(side) === 1)}
           onClick={() => dispatch(changeSide())}
         >
           Đổi bên
@@ -80,7 +91,7 @@ const ButtonGroup: React.FC<ButtonGroupProps> = ({ mode, side, showModel, histor
         <Button
           size='large'
           className={ButtonStyle}
-          disabled={(side === 0) || (mode === 2)}
+          disabled={(side === 0) || (mode === 2) || (mode === 5)}
           onClick={() => dispatch(clearChess())}
         >
           Chấp quân

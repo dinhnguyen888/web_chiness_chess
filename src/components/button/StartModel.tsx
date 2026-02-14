@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Modal, Radio } from 'antd';
 import { useAppDispatch } from '../../hooks';
-import { onModelOK, onModelCancel } from '../../models/chessSlice';
+import { onModelOK, onModelCancel, beginOnlineMatch } from '../../models/chessSlice';
 
 const RadioButton = Radio.Button;
 const RadioGroup = Radio.Group;
@@ -31,7 +31,11 @@ const StartModel: React.FC<StartModelProps> = ({ visible }) => {
     setConfirmLoading(true);
     setTimeout(() => {
       setConfirmLoading(false);
-      dispatch(onModelOK(options));
+      if (options.mode === 5) {
+        dispatch(beginOnlineMatch());
+      } else {
+        dispatch(onModelOK(options));
+      }
     }, 1000);
   };
 
@@ -61,8 +65,10 @@ const StartModel: React.FC<StartModelProps> = ({ visible }) => {
           <RadioButton value={1} style={radioButtonStyle}>Người vs Máy</RadioButton>
           <RadioButton value={2} style={radioButtonStyle}>Máy vs Máy</RadioButton>
           <RadioButton value={3} style={radioButtonStyle}>Người vs Người</RadioButton>
+          <RadioButton value={5} style={radioButtonStyle}>Chơi online</RadioButton>
         </RadioGroup>
       </div>
+      {options.mode !== 5 && (
       <div style={{ fontSize: 16, marginTop: 16 }}>
         Độ khó:
         <RadioGroup 
@@ -75,6 +81,8 @@ const StartModel: React.FC<StartModelProps> = ({ visible }) => {
           <RadioButton value={4} style={radioButtonStyle}>Bậc thầy</RadioButton>
         </RadioGroup>
       </div>
+      )}
+      {options.mode !== 5 && (
       <div style={{ fontSize: 16, marginTop: 16 }}>
         Thứ tự đi:
         <RadioGroup 
@@ -86,6 +94,8 @@ const StartModel: React.FC<StartModelProps> = ({ visible }) => {
           <RadioButton value={-1} style={radioButtonStyle}>Đen đi trước</RadioButton>
         </RadioGroup>
       </div>
+      )}
+      {options.mode !== 5 && (
       <div style={{ fontSize: 16, marginTop: 16 }}>
         Màu quân:
         <RadioGroup 
@@ -97,6 +107,12 @@ const StartModel: React.FC<StartModelProps> = ({ visible }) => {
           <RadioButton value={'b'} style={radioButtonStyle}>Quân Đen</RadioButton>
         </RadioGroup>
       </div>
+      )}
+      {options.mode === 5 && (
+        <p style={{ marginTop: 16, color: '#666' }}>
+          Ghép cặp qua WebSocket: màu quân và lượt đi do server gán sau khi có đối thủ.
+        </p>
+      )}
     </Modal>
   );
 };

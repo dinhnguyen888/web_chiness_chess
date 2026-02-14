@@ -30,6 +30,7 @@ export interface gameState {
   clearChessMode: boolean;
   history: Array<(string | undefined)[][]>;
   paceHistory: string[];
+  onlineMatching: boolean;
 }
 
 const initialState: gameState = {
@@ -46,7 +47,33 @@ const initialState: gameState = {
   clearChessMode: false,
   history: [],
   paceHistory: [],
+  onlineMatching: false,
 };
+
+/** Lật bàn nhìn đối diện: x' = (cols-1)-x, y' = (rows-1)-y — bàn 9×10 ô quen thuộc tương ứng x'=8-x, y'=9-y. */
+function flipBoardPerspective(board: (string | undefined)[][]): (string | undefined)[][] {
+  if (!board.length || !board[0]?.length) return board;
+  const maxY = board.length - 1;
+  const maxX = board[0].length - 1;
+  const out: (string | undefined)[][] = Array.from({ length: board.length }, () =>
+    Array(board[0].length).fill(undefined)
+  );
+  for (let y = 0; y <= maxY; y++) {
+    for (let x = 0; x <= maxX; x++) {
+      const key = board[y][x];
+      if (!key) continue;
+      const y2 = maxY - y;
+      const x2 = maxX - x;
+      const newKey = key[0] >= 'a' ? key[0].toUpperCase() : key[0].toLowerCase();
+      out[y2][x2] = newKey + key[1];
+    }
+  }
+  return out;
+}
+
+function flipSquare(pos: [number, number], maxY: number, maxX: number): [number, number] {
+  return [maxY - pos[0], maxX - pos[1]];
+}
 
 const chessSlice = createSlice({
   name: 'chess',
@@ -223,22 +250,29 @@ const chessSlice = createSlice({
     onGameOver(state) {
       state.winner = null;
       state.side = 0;
+      if (state.mode === 5) {
+        state.mode = 1;
+        state.onlineMatching = false;
+        state.board = [];
+        state.click = null;
+        state.nextPace = null;
+        state.chessChange = null;
+        state.history = [];
+        state.paceHistory = [];
+      }
     },
     changeSide(state) {
-      state.board = state.board.reverse().map(row => {
-        return row.map(key => {
-          if (!key) return key;
-          const newKey = key[0] >= 'a' ? key[0].toUpperCase() : key[0].toLowerCase();
-          return newKey + key[1];
-        });
-      });
+      const b = state.board;
+      const maxY = b.length > 0 ? b.length - 1 : 0;
+      const maxX = b[0]?.length ? b[0].length - 1 : 0;
+      state.board = flipBoardPerspective(b);
       state.color = state.color === 'r' ? 'b' : 'r';
       state.side = -state.side;
       state.nextPace = null;
       state.click = null;
       const c = state.chessChange;
       if (c) {
-        state.chessChange = [[9 - c[0][0], c[0][1]], [9 - c[1][0], c[1][1]], -c[2]];
+        state.chessChange = [flipSquare(c[0], maxY, maxX), flipSquare(c[1], maxY, maxX), -c[2]];
       }
       if (state.mode === 1) {
         state.history = [];
@@ -266,13 +300,99 @@ const chessSlice = createSlice({
       state.click = null;
       state.nextPace = null;
       state.chessChange = null;
+    },
+    beginOnlineMatch(state) {
+      state.showModel = false;
+      state.mode = 5;
+      state.onlineMatching = true;
+      state.winner = null;
+      state.side = 0;
+      state.board = [];
+      state.click = null;
+      state.nextPace = null;
+      state.chessChange = null;
+      state.history = [];
+      state.paceHistory = [];
+    },
+    onlineMatched(state, action: PayloadAction<{ color: string; orderSide: number }>) {
+      const { color, orderSide } = action.payload;
+      state.onlineMatching = false;
+      state.side = color === 'r' ? orderSide : 0 - orderSide;
+      state.difficulty = 2;
+      state.mode = 5;
+      state.color = color;
+      const initialBoard = [
+        ['C0', 'M0', 'X0', 'S0', 'J0', 'S1', 'X1', 'M1', 'C1'],
+        [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+        [undefined, 'P0', undefined, undefined, undefined, undefined, undefined, 'P1', undefined],
+        ['Z0', undefined, 'Z1', undefined, 'Z2', undefined, 'Z3', undefined, 'Z4'],
+        [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+        [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+        ['z0', undefined, 'z1', undefined, 'z2', undefined, 'z3', undefined, 'z4'],
+        [undefined, 'p0', undefined, undefined, undefined, undefined, undefined, 'p1', undefined],
+        [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+        ['c0', 'm0', 'x0', 's0', 'j0', 's1', 'x1', 'm1', 'c1']
+      ];
+      state.board = color === 'b' ? flipBoardPerspective(initialBoard) : initialBoard;
+      state.click = null;
+      state.nextPace = null;
+      state.chessChange = null;
+      state.history = state.side === 1 ? [state.board.map(row => [...row])] : [];
+      state.paceHistory = [];
+    },
+    onlineAborted(state) {
+      state.onlineMatching = false;
+      state.mode = 1;
+      state.side = 0;
+      state.board = [];
+      state.click = null;
+      state.nextPace = null;
+      state.chessChange = null;
+      state.history = [];
+      state.paceHistory = [];
+    },
+    applyRemoteMove(
+      state,
+      action: PayloadAction<{
+        to: [number, number];
+        from: [number, number];
+        piece: string;
+        winner: number | null;
+      }>
+    ) {
+      const { to, from, piece, winner } = action.payload;
+      const maxY = state.board.length > 0 ? state.board.length - 1 : 9;
+      const maxX = state.board[0]?.length ? state.board[0].length - 1 : 8;
+
+      // Flip coordinates and piece case because the remote player's board is mirrored relative to ours
+      const i = maxY - to[0];
+      const j = maxX - to[1];
+      const oldi = maxY - from[0];
+      const oldj = maxX - from[1];
+      const flippedPiece = piece[0] >= 'a' ? piece[0].toUpperCase() + piece.slice(1) : piece[0].toLowerCase() + piece.slice(1);
+
+      state.board[i][j] = flippedPiece;
+      state.board[oldi][oldj] = undefined;
+      const pieceSide = flippedPiece[0] >= 'a' ? 1 : -1;
+      state.chessChange = [[i, j], [oldi, oldj], pieceSide];
+      if (winner !== null) {
+        state.winner = winner;
+        state.side = 0;
+      } else {
+        state.side = -state.side;
+      }
+      state.history.push(state.board.map(row => [...row]));
+      state.paceHistory.push(state.chessChange.join());
+      state.nextPace = null;
+      state.click = null;
     }
   }
 });
 
 export const {
   startClick, onModelOK, onModelCancel, chessClick, boardClick,
-  AIClick, toggleAI, onGameOver, changeSide, clearChess, showHint, regretMove
+  AIClick, toggleAI, onGameOver, changeSide, clearChess, showHint, regretMove,
+  beginOnlineMatch, onlineMatched, onlineAborted, applyRemoteMove
 } = chessSlice.actions;
 
 export default chessSlice.reducer;

@@ -1,6 +1,8 @@
 import React from 'react';
 import { style } from 'typestyle';
+import { Spin, Typography } from 'antd';
 import { useAppSelector, useAppDispatch } from '../hooks';
+import { useOnlinePlay } from '../hooks/useOnlinePlay';
 import Chess from '../components/chess/Chess';
 import Dot from '../components/chess/Dot';
 import Box from '../components/chess/Box';
@@ -15,6 +17,7 @@ import background from '../assets/background.png';
 const ChessBoard: React.FC = () => {
   const chessState = useAppSelector((state) => state.chess);
   const dispatch = useAppDispatch();
+  useOnlinePlay();
 
   const backgroundStyle = style({
     backgroundImage: `url(${background})`,
@@ -54,6 +57,26 @@ const ChessBoard: React.FC = () => {
 
   return (
     <div className={backgroundStyle}>
+      {chessState.onlineMatching && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1000,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 16,
+          }}
+        >
+          <Spin size="large" />
+          <Typography.Text style={{ color: '#fff', fontSize: 18 }}>
+            Đang tìm đối thủ (WebSocket)...
+          </Typography.Text>
+        </div>
+      )}
       <div className={boxStyle} onClick={handleBoardClick}>
         {chessState.board.map((row, i) => {
           return row.map((item, j) => {
