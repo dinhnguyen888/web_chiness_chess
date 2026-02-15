@@ -20,6 +20,7 @@ export function useOnlinePlay() {
   const chessChange = useAppSelector((s) => s.chess.chessChange);
   const board = useAppSelector((s) => s.chess.board);
   const winner = useAppSelector((s) => s.chess.winner);
+  const playerName = useAppSelector((s) => s.chess.playerName);
 
   const wsRef = useRef<WebSocket | null>(null);
   const lastSentPaceLenRef = useRef(0);
@@ -37,7 +38,7 @@ export function useOnlinePlay() {
     wsRef.current = ws;
 
     ws.onopen = () => {
-      ws.send(JSON.stringify({ type: 'find_match' }));
+      ws.send(JSON.stringify({ type: 'find_match', name: playerName }));
     };
 
     ws.onmessage = (ev) => {
@@ -50,9 +51,10 @@ export function useOnlinePlay() {
       const msg = data as Record<string, unknown>;
 
       if (msg.type === 'matched' && typeof msg.color === 'string' && typeof msg.orderSide === 'number') {
-        message.success('Đã ghép đối thủ');
+        const opponentName = typeof msg.opponentName === 'string' ? msg.opponentName : 'Opponent';
+        message.success(`Đã ghép đối thủ: ${opponentName}`);
         lastSentPaceLenRef.current = 0;
-        dispatch(onlineMatched({ color: msg.color, orderSide: msg.orderSide as number }));
+        dispatch(onlineMatched({ color: msg.color, orderSide: msg.orderSide as number, opponentName }));
         return;
       }
 

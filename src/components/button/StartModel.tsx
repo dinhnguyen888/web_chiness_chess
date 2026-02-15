@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, Radio } from 'antd';
+import { Modal, Radio, Input, Button } from 'antd';
 import { useAppDispatch } from '../../hooks';
 import { onModelOK, onModelCancel, beginOnlineMatch } from '../../models/chessSlice';
 
@@ -26,13 +26,22 @@ const StartModel: React.FC<StartModelProps> = ({ visible }) => {
     side: 1,
     color: 'r'
   });
+  const [playerName, setPlayerName] = useState(() => `Guest_${Math.floor(Math.random() * 10000)}`);
+
+  const generateName = () => {
+    const prefixes = ['Pro', 'Master', 'Thánh', 'Thần Bài', 'Cờ Thủ', 'Độc Cô', 'Sát Thủ'];
+    const names = ['Ẩn Danh', 'Sài Gòn', 'Hà Nội', 'Đỉnh Cao', 'Xuất Kích', 'Bất Bại', 'Chớp Tráng'];
+    const rnd1 = prefixes[Math.floor(Math.random() * prefixes.length)];
+    const rnd2 = names[Math.floor(Math.random() * names.length)];
+    setPlayerName(`${rnd1} ${rnd2}`);
+  };
 
   const handleOk = () => {
     setConfirmLoading(true);
     setTimeout(() => {
       setConfirmLoading(false);
       if (options.mode === 5) {
-        dispatch(beginOnlineMatch());
+        dispatch(beginOnlineMatch(playerName));
       } else {
         dispatch(onModelOK(options));
       }
@@ -109,9 +118,22 @@ const StartModel: React.FC<StartModelProps> = ({ visible }) => {
       </div>
       )}
       {options.mode === 5 && (
-        <p style={{ marginTop: 16, color: '#666' }}>
-          Ghép cặp qua WebSocket: màu quân và lượt đi do server gán sau khi có đối thủ.
-        </p>
+        <div style={{ marginTop: 16 }}>
+          <div style={{ fontSize: 16, marginBottom: 8 }}>Tên hiển thị của bạn:</div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Input 
+              value={playerName} 
+              onChange={(e) => setPlayerName(e.target.value)} 
+              size="large" 
+              maxLength={20}
+              placeholder="Nhập tên..." 
+            />
+            <Button size="large" onClick={generateName}>Tạo Tên Nhanh</Button>
+          </div>
+          <p style={{ marginTop: 16, color: '#666' }}>
+            Ghép cặp qua WebSocket: màu quân và lượt đi do server gán ngẫu nhiên.
+          </p>
+        </div>
       )}
     </Modal>
   );

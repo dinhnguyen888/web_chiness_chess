@@ -31,6 +31,8 @@ export interface gameState {
   history: Array<(string | undefined)[][]>;
   paceHistory: string[];
   onlineMatching: boolean;
+  playerName: string;
+  opponentName: string;
 }
 
 const initialState: gameState = {
@@ -48,6 +50,8 @@ const initialState: gameState = {
   history: [],
   paceHistory: [],
   onlineMatching: false,
+  playerName: '',
+  opponentName: '',
 };
 
 /** Lật bàn nhìn đối diện: x' = (cols-1)-x, y' = (rows-1)-y — bàn 9×10 ô quen thuộc tương ứng x'=8-x, y'=9-y. */
@@ -301,10 +305,11 @@ const chessSlice = createSlice({
       state.nextPace = null;
       state.chessChange = null;
     },
-    beginOnlineMatch(state) {
+    beginOnlineMatch(state, action: PayloadAction<string>) {
       state.showModel = false;
       state.mode = 5;
       state.onlineMatching = true;
+      state.playerName = action.payload;
       state.winner = null;
       state.side = 0;
       state.board = [];
@@ -314,13 +319,14 @@ const chessSlice = createSlice({
       state.history = [];
       state.paceHistory = [];
     },
-    onlineMatched(state, action: PayloadAction<{ color: string; orderSide: number }>) {
-      const { color, orderSide } = action.payload;
+    onlineMatched(state, action: PayloadAction<{ color: string; orderSide: number; opponentName: string }>) {
+      const { color, orderSide, opponentName } = action.payload;
       state.onlineMatching = false;
       state.side = color === 'r' ? orderSide : 0 - orderSide;
       state.difficulty = 2;
       state.mode = 5;
       state.color = color;
+      state.opponentName = opponentName;
       const initialBoard = [
         ['C0', 'M0', 'X0', 'S0', 'J0', 'S1', 'X1', 'M1', 'C1'],
         [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
@@ -350,6 +356,8 @@ const chessSlice = createSlice({
       state.chessChange = null;
       state.history = [];
       state.paceHistory = [];
+      state.playerName = '';
+      state.opponentName = '';
     },
     applyRemoteMove(
       state,

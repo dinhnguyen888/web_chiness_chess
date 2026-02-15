@@ -77,6 +77,13 @@ const ChessBoard: React.FC = () => {
           </Typography.Text>
         </div>
       )}
+      {chessState.mode === 5 && !chessState.onlineMatching && (
+        <div style={{ width: '507px', display: 'flex', justifyContent: 'flex-start', marginBottom: '8px' }}>
+          <Typography.Text style={{ color: '#fff', fontSize: '18px', background: 'rgba(0,0,0,0.6)', padding: '4px 12px', borderRadius: '4px', textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>
+            Đối thủ: <strong style={{ color: '#ffeb3b' }}>{chessState.opponentName || 'Người Lạ'}</strong>
+          </Typography.Text>
+        </div>
+      )}
       <div className={boxStyle} onClick={handleBoardClick}>
         {chessState.board.map((row, i) => {
           return row.map((item, j) => {
@@ -114,6 +121,14 @@ const ChessBoard: React.FC = () => {
         />
       </div>
       
+      {chessState.mode === 5 && !chessState.onlineMatching && (
+        <div style={{ width: '507px', display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+          <Typography.Text style={{ color: '#fff', fontSize: '18px', background: 'rgba(0,0,0,0.6)', padding: '4px 12px', borderRadius: '4px', textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>
+            Bạn: <strong style={{ color: '#ffeb3b' }}>{chessState.playerName}</strong>
+          </Typography.Text>
+        </div>
+      )}
+
       <div className={buttonGroupStyle}>
         <ButtonGroup 
           mode={chessState.mode} 
