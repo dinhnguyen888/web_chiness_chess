@@ -116,7 +116,7 @@ const chessSlice = createSlice({
       state.showModel = false;
     },
     chessClick(state, action: PayloadAction<ChessProps>) {
-      if (state.mode === 2 || (state.mode === 1 && state.side === -1)) return state;
+      if (state.mode === 2 || (state.mode === 1 && state.side === -1) || (state.mode === 5 && state.side !== 1)) return state;
       
       if (state.clearChessMode) {
         state.clearChessMode = false;
@@ -176,7 +176,7 @@ const chessSlice = createSlice({
       }
     },
     boardClick(state, action: PayloadAction<{x: number, y: number, offsetLeft: number, offsetTop: number}>) {
-      if (state.mode === 2 || (state.mode === 1 && state.side === -1)) return state;
+      if (state.mode === 2 || (state.mode === 1 && state.side === -1) || (state.mode === 5 && state.side !== 1)) return state;
       
       const { x, y, offsetLeft, offsetTop } = action.payload;
       const chessSize = 54;
