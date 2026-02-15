@@ -376,7 +376,7 @@ const chessSlice = createSlice({
       const pieceSide = flippedPiece[0] >= 'a' ? 1 : -1;
       state.chessChange = [[i, j], [oldi, oldj], pieceSide];
       if (winner !== null) {
-        state.winner = winner;
+        state.winner = -winner;
         state.side = 0;
       } else {
         state.side = -state.side;
