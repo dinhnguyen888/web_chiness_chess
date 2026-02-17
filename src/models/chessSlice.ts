@@ -16,6 +16,18 @@ export interface gameOptions {
   color: string;
 }
 
+export interface RoomInfo {
+  id: string;
+  name: string;
+  host: string;
+  isPlaying: boolean;
+}
+
+export interface ChatMessage {
+  sender: string;
+  message: string;
+}
+
 export interface gameState {
   side: number;
   click: ChessProps | null;
@@ -31,6 +43,9 @@ export interface gameState {
   history: Array<(string | undefined)[][]>;
   paceHistory: string[];
   onlineMatching: boolean;
+  roomStatus: 'idle' | 'listing' | 'playing';
+  rooms: RoomInfo[];
+  chat: ChatMessage[];
   playerName: string;
   opponentName: string;
 }
@@ -50,6 +65,9 @@ const initialState: gameState = {
   history: [],
   paceHistory: [],
   onlineMatching: false,
+  roomStatus: 'idle',
+  rooms: [],
+  chat: [],
   playerName: '',
   opponentName: '',
 };
@@ -308,7 +326,7 @@ const chessSlice = createSlice({
     beginOnlineMatch(state, action: PayloadAction<string>) {
       state.showModel = false;
       state.mode = 5;
-      state.onlineMatching = true;
+      state.roomStatus = 'listing';
       state.playerName = action.payload;
       state.winner = null;
       state.side = 0;
@@ -318,9 +336,17 @@ const chessSlice = createSlice({
       state.chessChange = null;
       state.history = [];
       state.paceHistory = [];
+      state.chat = [];
+    },
+    updateRoomList(state, action: PayloadAction<RoomInfo[]>) {
+      state.rooms = action.payload;
+    },
+    addChatMessage(state, action: PayloadAction<ChatMessage>) {
+      state.chat.push(action.payload);
     },
     onlineMatched(state, action: PayloadAction<{ color: string; orderSide: number; opponentName: string }>) {
       const { color, orderSide, opponentName } = action.payload;
+      state.roomStatus = 'playing';
       state.onlineMatching = false;
       state.side = color === 'r' ? orderSide : 0 - orderSide;
       state.difficulty = 2;
@@ -347,8 +373,8 @@ const chessSlice = createSlice({
       state.paceHistory = [];
     },
     onlineAborted(state) {
+      state.roomStatus = 'listing';
       state.onlineMatching = false;
-      state.mode = 1;
       state.side = 0;
       state.board = [];
       state.click = null;
@@ -356,8 +382,8 @@ const chessSlice = createSlice({
       state.chessChange = null;
       state.history = [];
       state.paceHistory = [];
-      state.playerName = '';
       state.opponentName = '';
+      state.chat = [];
     },
     applyRemoteMove(
       state,
@@ -400,7 +426,7 @@ const chessSlice = createSlice({
 export const {
   startClick, onModelOK, onModelCancel, chessClick, boardClick,
   AIClick, toggleAI, onGameOver, changeSide, clearChess, showHint, regretMove,
-  beginOnlineMatch, onlineMatched, onlineAborted, applyRemoteMove
+  beginOnlineMatch, onlineMatched, onlineAborted, applyRemoteMove, updateRoomList, addChatMessage
 } = chessSlice.actions;
 
 export default chessSlice.reducer;

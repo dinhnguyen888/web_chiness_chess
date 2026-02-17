@@ -10,6 +10,8 @@ import AI from '../components/AI/AI';
 import ButtonGroup from '../components/button/ButtonGroup';
 import WinnerModel from '../components/button/WinnerModel';
 import { boardClick } from '../models/chessSlice';
+import LobbyModal from '../components/lobby/LobbyModal';
+import ChatBox from '../components/lobby/ChatBox';
 
 import bgImg from '../assets/style/bg.png';
 import background from '../assets/background.png';
@@ -57,27 +59,8 @@ const ChessBoard: React.FC = () => {
 
   return (
     <div className={backgroundStyle}>
-      {chessState.onlineMatching && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 1000,
-            background: 'rgba(0,0,0,0.45)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 16,
-          }}
-        >
-          <Spin size="large" />
-          <Typography.Text style={{ color: '#fff', fontSize: 18 }}>
-            Đang tìm đối thủ (WebSocket)...
-          </Typography.Text>
-        </div>
-      )}
-      {chessState.mode === 5 && !chessState.onlineMatching && (
+      <LobbyModal />
+      {chessState.mode === 5 && chessState.roomStatus === 'playing' && (
         <div style={{ width: '507px', display: 'flex', justifyContent: 'flex-start', marginBottom: '8px' }}>
           <Typography.Text style={{ color: '#fff', fontSize: '18px', background: 'rgba(0,0,0,0.6)', padding: '4px 12px', borderRadius: '4px', textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>
             Đối thủ: <strong style={{ color: '#ffeb3b' }}>{chessState.opponentName || 'Người Lạ'}</strong>
@@ -137,6 +120,9 @@ const ChessBoard: React.FC = () => {
           historyLength={chessState.history.length} 
         />
       </div>
+      
+      <ChatBox />
+
       
       <WinnerModel 
         mode={chessState.mode} 

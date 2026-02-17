@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { message } from 'antd';
 import { useAppDispatch, useAppSelector } from './index';
-import { applyRemoteMove, onlineMatched, onlineAborted } from '../models/chessSlice';
+import { applyRemoteMove, onlineMatched, onlineAborted, updateRoomList, addChatMessage } from '../models/chessSlice';
 import { store } from '../store';
 
 function wsUrl(): string {
@@ -12,10 +12,12 @@ function wsUrl(): string {
   return `${proto}//${window.location.hostname}:8080`;
 }
 
+export let globalWs: WebSocket | null = null;
+
 export function useOnlinePlay() {
   const dispatch = useAppDispatch();
   const mode = useAppSelector((s) => s.chess.mode);
-  const onlineMatching = useAppSelector((s) => s.chess.onlineMatching);
+  const roomStatus = useAppSelector((s) => s.chess.roomStatus);
   const paceHistory = useAppSelector((s) => s.chess.paceHistory);
   const chessChange = useAppSelector((s) => s.chess.chessChange);
   const board = useAppSelector((s) => s.chess.board);
@@ -29,6 +31,7 @@ export function useOnlinePlay() {
     if (mode !== 5) {
       wsRef.current?.close();
       wsRef.current = null;
+      globalWs = null;
       lastSentPaceLenRef.current = 0;
       return;
     }
@@ -36,9 +39,10 @@ export function useOnlinePlay() {
     lastSentPaceLenRef.current = 0;
     const ws = new WebSocket(wsUrl());
     wsRef.current = ws;
+    globalWs = ws;
 
     ws.onopen = () => {
-      ws.send(JSON.stringify({ type: 'find_match', name: playerName }));
+      ws.send(JSON.stringify({ type: 'list_rooms', name: playerName }));
     };
 
     ws.onmessage = (ev) => {
@@ -50,6 +54,26 @@ export function useOnlinePlay() {
       }
       const msg = data as Record<string, unknown>;
 
+      if (msg.type === 'room_list') {
+        dispatch(updateRoomList(msg.rooms as any));
+        return;
+      }
+
+      if (msg.type === 'room_created') {
+        message.success(`Đã tạo phòng: ${msg.roomName}`);
+        return;
+      }
+
+      if (msg.type === 'chat') {
+        dispatch(addChatMessage({ sender: msg.sender as string, message: msg.message as string }));
+        return;
+      }
+
+      if (msg.type === 'error') {
+        message.error(msg.message as string);
+        return;
+      }
+
       if (msg.type === 'matched' && typeof msg.color === 'string' && typeof msg.orderSide === 'number') {
         const opponentName = typeof msg.opponentName === 'string' ? msg.opponentName : 'Opponent';
         message.success(`Đã ghép đối thủ: ${opponentName}`);
@@ -59,14 +83,14 @@ export function useOnlinePlay() {
       }
 
       if (msg.type === 'queue') {
-        message.info('Đang trong hàng chờ...');
+        message.info('Đang chờ đối thủ...');
         return;
       }
 
       if (msg.type === 'opponent_left') {
         message.warning('Đối thủ đã thoát');
-        ws.close();
         dispatch(onlineAborted());
+        ws.send(JSON.stringify({ type: 'list_rooms' }));
         return;
       }
 
@@ -106,7 +130,7 @@ export function useOnlinePlay() {
   }, [mode, dispatch]);
 
   useEffect(() => {
-    if (mode !== 5 || onlineMatching) return;
+    if (mode !== 5 || roomStatus !== 'playing') return;
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     if (paceHistory.length <= lastSentPaceLenRef.current) return;
@@ -126,5 +150,5 @@ export function useOnlinePlay() {
         winner: winner ?? null,
       })
     );
-  }, [mode, onlineMatching, paceHistory, chessChange, board, winner]);
+  }, [mode, roomStatus, paceHistory, chessChange, board, winner]);
 }
