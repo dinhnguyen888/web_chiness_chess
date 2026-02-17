@@ -26,10 +26,9 @@ const ChatBox: React.FC = () => {
 
   return (
     <div style={{
-      width: '100%', height: 180, background: 'rgba(0,0,0,0.6)', 
-      borderRadius: 8, padding: 12, display: 'flex', flexDirection: 'column', 
-      marginTop: 16, border: '1px solid #444',
-      maxWidth: 507
+      width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', 
+      padding: 12, display: 'flex', flexDirection: 'column', 
+      borderRight: '1px solid #444',
     }}>
       <div style={{ flex: 1, overflowY: 'auto', marginBottom: 8, paddingRight: 8 }}>
         {chat.map((c, i) => (
