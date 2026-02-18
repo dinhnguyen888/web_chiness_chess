@@ -1,7 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { message } from 'antd';
 import { useAppDispatch, useAppSelector } from './index';
-import { applyRemoteMove, onlineMatched, onlineAborted, updateRoomList, addChatMessage } from '../models/chessSlice';
+import {
+  applyRemoteMove, onlineMatched, onlineAborted, updateRoomList, addChatMessage,
+  hostRoomCreated, playerJoinedRoom, guestJoined, guestLeft,
+} from '../models/chessSlice';
 import { store } from '../store';
 
 function wsUrl(): string {
@@ -59,8 +62,30 @@ export function useOnlinePlay() {
         return;
       }
 
+      // Host đã tạo phòng thành công → chuyển sang màn hình phòng chờ
       if (msg.type === 'room_created') {
-        message.success(`Đã tạo phòng: ${msg.roomName}`);
+        dispatch(hostRoomCreated({ roomId: msg.roomId as string, roomName: msg.roomName as string }));
+        return;
+      }
+
+      // Khách đã join phòng → chờ host bắt đầu
+      if (msg.type === 'room_joined') {
+        message.info(`Đã vào phòng. Chờ chủ phòng bắt đầu...`);
+        dispatch(playerJoinedRoom({ roomId: msg.roomId as string, hostName: msg.hostName as string }));
+        return;
+      }
+
+      // Host nhận notify có khách vào
+      if (msg.type === 'guest_joined') {
+        message.success(`${msg.guestName} đã vào phòng!`);
+        dispatch(guestJoined(msg.guestName as string));
+        return;
+      }
+
+      // Host nhận notify khách rời phòng
+      if (msg.type === 'guest_left') {
+        message.warning('Khách đã rời phòng');
+        dispatch(guestLeft());
         return;
       }
 
@@ -76,7 +101,7 @@ export function useOnlinePlay() {
 
       if (msg.type === 'matched' && typeof msg.color === 'string' && typeof msg.orderSide === 'number') {
         const opponentName = typeof msg.opponentName === 'string' ? msg.opponentName : 'Opponent';
-        message.success(`Đã ghép đối thủ: ${opponentName}`);
+        message.success(`Trận đấu bắt đầu! Đối thủ: ${opponentName}`);
         lastSentPaceLenRef.current = 0;
         dispatch(onlineMatched({ color: msg.color, orderSide: msg.orderSide as number, opponentName }));
         return;

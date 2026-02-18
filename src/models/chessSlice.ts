@@ -20,7 +20,9 @@ export interface RoomInfo {
   id: string;
   name: string;
   host: string;
+  guest: string;
   isPlaying: boolean;
+  autoStart: boolean;
 }
 
 export interface ChatMessage {
@@ -43,7 +45,10 @@ export interface gameState {
   history: Array<(string | undefined)[][]>;
   paceHistory: string[];
   onlineMatching: boolean;
-  roomStatus: 'idle' | 'listing' | 'playing';
+  roomStatus: 'idle' | 'listing' | 'waiting_in_room' | 'playing';
+  currentRoomId: string;
+  currentRoomName: string;
+  guestName: string;
   rooms: RoomInfo[];
   chat: ChatMessage[];
   playerName: string;
@@ -66,6 +71,9 @@ const initialState: gameState = {
   paceHistory: [],
   onlineMatching: false,
   roomStatus: 'idle',
+  currentRoomId: '',
+  currentRoomName: '',
+  guestName: '',
   rooms: [],
   chat: [],
   playerName: '',
@@ -344,6 +352,27 @@ const chessSlice = createSlice({
     addChatMessage(state, action: PayloadAction<ChatMessage>) {
       state.chat.push(action.payload);
     },
+    // Chủ phòng: đã tạo phòng, chờ người vào
+    hostRoomCreated(state, action: PayloadAction<{ roomId: string; roomName: string }>) {
+      state.roomStatus = 'waiting_in_room';
+      state.currentRoomId = action.payload.roomId;
+      state.currentRoomName = action.payload.roomName;
+      state.guestName = '';
+    },
+    // Khách: đã join phòng, chờ host bắt đầu
+    playerJoinedRoom(state, action: PayloadAction<{ roomId: string; hostName: string }>) {
+      state.roomStatus = 'waiting_in_room';
+      state.currentRoomId = action.payload.roomId;
+      state.opponentName = action.payload.hostName;
+    },
+    // Host nhận thông báo có khách vào
+    guestJoined(state, action: PayloadAction<string>) {
+      state.guestName = action.payload;
+    },
+    // Khách rời phòng, host trở về chờ
+    guestLeft(state) {
+      state.guestName = '';
+    },
     onlineMatched(state, action: PayloadAction<{ color: string; orderSide: number; opponentName: string }>) {
       const { color, orderSide, opponentName } = action.payload;
       state.roomStatus = 'playing';
@@ -426,7 +455,8 @@ const chessSlice = createSlice({
 export const {
   startClick, onModelOK, onModelCancel, chessClick, boardClick,
   AIClick, toggleAI, onGameOver, changeSide, clearChess, showHint, regretMove,
-  beginOnlineMatch, onlineMatched, onlineAborted, applyRemoteMove, updateRoomList, addChatMessage
+  beginOnlineMatch, onlineMatched, onlineAborted, applyRemoteMove, updateRoomList, addChatMessage,
+  hostRoomCreated, playerJoinedRoom, guestJoined, guestLeft
 } = chessSlice.actions;
 
 export default chessSlice.reducer;
