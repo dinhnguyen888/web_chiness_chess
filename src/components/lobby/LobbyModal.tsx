@@ -2,6 +2,7 @@ import React from 'react';
 import { useAppSelector } from '../../hooks';
 import LobbyScreen from './LobbyScreen';
 import RoomWaitingScreen from './RoomWaitingScreen';
+import AuthScreen from './AuthScreen';
 
 /**
  * Entry point cho toàn bộ Lobby UI.
@@ -11,8 +12,10 @@ import RoomWaitingScreen from './RoomWaitingScreen';
 const LobbyModal: React.FC = () => {
   const mode = useAppSelector(s => s.chess.mode);
   const roomStatus = useAppSelector(s => s.chess.roomStatus);
+  const isLoggedIn = useAppSelector(s => s.chess.isLoggedIn);
 
   if (mode !== 5 || roomStatus === 'playing') return null;
+  if (!isLoggedIn) return <AuthScreen />;
   if (roomStatus === 'waiting_in_room') return <RoomWaitingScreen />;
   return <LobbyScreen />;
 };

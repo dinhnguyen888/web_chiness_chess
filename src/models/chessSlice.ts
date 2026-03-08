@@ -46,6 +46,7 @@ export interface gameState {
   paceHistory: string[];
   onlineMatching: boolean;
   roomStatus: 'idle' | 'listing' | 'waiting_in_room' | 'playing';
+  isLoggedIn: boolean;
   currentRoomId: string;
   currentRoomName: string;
   guestName: string;
@@ -71,6 +72,7 @@ const initialState: gameState = {
   paceHistory: [],
   onlineMatching: false,
   roomStatus: 'idle',
+  isLoggedIn: false,
   currentRoomId: '',
   currentRoomName: '',
   guestName: '',
@@ -402,8 +404,8 @@ const chessSlice = createSlice({
       state.paceHistory = [];
     },
     onlineAborted(state) {
-      state.roomStatus = 'listing';
       state.onlineMatching = false;
+      state.roomStatus = 'listing';
       state.side = 0;
       state.board = [];
       state.click = null;
@@ -413,6 +415,10 @@ const chessSlice = createSlice({
       state.paceHistory = [];
       state.opponentName = '';
       state.chat = [];
+    },
+    loginSuccess(state, action: PayloadAction<string>) {
+      state.isLoggedIn = true;
+      state.playerName = action.payload;
     },
     applyRemoteMove(
       state,
@@ -456,7 +462,7 @@ export const {
   startClick, onModelOK, onModelCancel, chessClick, boardClick,
   AIClick, toggleAI, onGameOver, changeSide, clearChess, showHint, regretMove,
   beginOnlineMatch, onlineMatched, onlineAborted, applyRemoteMove, updateRoomList, addChatMessage,
-  hostRoomCreated, playerJoinedRoom, guestJoined, guestLeft
+  hostRoomCreated, playerJoinedRoom, guestJoined, guestLeft, loginSuccess
 } = chessSlice.actions;
 
 export default chessSlice.reducer;

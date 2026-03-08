@@ -3,7 +3,7 @@ import { message } from 'antd';
 import { useAppDispatch, useAppSelector } from './index';
 import {
   applyRemoteMove, onlineMatched, onlineAborted, updateRoomList, addChatMessage,
-  hostRoomCreated, playerJoinedRoom, guestJoined, guestLeft,
+  hostRoomCreated, playerJoinedRoom, guestJoined, guestLeft, loginSuccess
 } from '../models/chessSlice';
 import { store } from '../store';
 
@@ -45,7 +45,11 @@ export function useOnlinePlay() {
     globalWs = ws;
 
     ws.onopen = () => {
-      ws.send(JSON.stringify({ type: 'list_rooms', name: playerName }));
+      // Khi WS mở, tự động gửi verify_jwt nếu có token lưu ở localStorage
+      const token = localStorage.getItem('chess_jwt_token');
+      if (token) {
+        ws.send(JSON.stringify({ type: 'verify_jwt', token }));
+      }
     };
 
     ws.onmessage = (ev) => {
@@ -56,6 +60,25 @@ export function useOnlinePlay() {
         return;
       }
       const msg = data as Record<string, unknown>;
+
+      if (msg.type === 'auth_success') {
+        const username = msg.username as string;
+        if (msg.token) {
+            localStorage.setItem('chess_jwt_token', msg.token as string);
+        }
+        if (msg.action !== 'verify') {
+            message.success(msg.action === 'register' ? 'Đăng ký thành công!' : 'Đăng nhập thành công!');
+        }
+        dispatch(loginSuccess(username));
+        ws.send(JSON.stringify({ type: 'list_rooms', name: username }));
+        return;
+      }
+
+      if (msg.type === 'auth_fail') {
+        localStorage.removeItem('chess_jwt_token');
+        message.warning('Phiên đăng nhập hết hạn, vui lòng đăng nhập lại');
+        return;
+      }
 
       if (msg.type === 'room_list') {
         dispatch(updateRoomList(msg.rooms as any));
