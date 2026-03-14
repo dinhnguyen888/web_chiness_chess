@@ -20,6 +20,13 @@ const AuthScreen: React.FC = () => {
       message.error("Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu");
       return;
     }
+    if (username.trim().length > 10) {
+      message.error("Tên đăng nhập không được vượt quá 10 ký tự");
+      return;
+    }
+    if (username.trim().includes(" ") || username.trim().includes("@")) {
+      message.warning("Vui lòng sử dụng Tên đăng nhập ngắn gọn, không dùng Email hay chứa dấu cách");
+    }
     
     setLoading(true);
     setTimeout(() => setLoading(false), 2000); 
@@ -52,8 +59,8 @@ const AuthScreen: React.FC = () => {
         <Typography.Title level={3} style={{ color: '#1890ff', margin: 0 }}>
           {mode === 'login' ? 'Đăng nhập' : 'Tạo tài khoản'}
         </Typography.Title>
-        <Typography.Text style={{ color: '#666', fontSize: 14 }}>
-          Hệ thống xác thực JWT an toàn
+        <Typography.Text style={{ color: '#666', fontSize: 13 }}>
+          Sử dụng tên ngắn gọn (ví dụ: Dinh123), tối đa 10 ký tự
         </Typography.Text>
 
         <Segmented 
@@ -70,10 +77,11 @@ const AuthScreen: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 8 }}>
           <Input 
             size="large" 
-            placeholder="Tên đăng nhập" 
+            placeholder="Tên đăng nhập (Tối đa 10 ký tự)" 
             prefix={<UserOutlined style={{ color: '#bfbfbf' }} />} 
             value={username}
             onChange={e => setUsername(e.target.value)}
+            maxLength={10}
           />
           <Input.Password 
             size="large" 
