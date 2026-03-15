@@ -56,6 +56,25 @@ export interface gameState {
   opponentName: string;
 }
 
+let initIsLoggedIn = false;
+let initPlayerName = '';
+try {
+  const token = localStorage.getItem('chess_jwt_token');
+  if (token) {
+    const payloadBase64 = token.split('.')[1];
+    const base64 = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
+    const pad = base64.length % 4;
+    const paddedBase64 = pad ? base64 + '='.repeat(4 - pad) : base64;
+    const payloadJson = JSON.parse(atob(paddedBase64));
+    if (payloadJson && payloadJson.username) {
+      initIsLoggedIn = true;
+      initPlayerName = payloadJson.username;
+    }
+  }
+} catch (e) {
+  // Ignore token parse error
+}
+
 const initialState: gameState = {
   side: 0,
   click: null,
@@ -72,13 +91,13 @@ const initialState: gameState = {
   paceHistory: [],
   onlineMatching: false,
   roomStatus: 'idle',
-  isLoggedIn: false,
+  isLoggedIn: initIsLoggedIn,
   currentRoomId: '',
   currentRoomName: '',
   guestName: '',
   rooms: [],
   chat: [],
-  playerName: '',
+  playerName: initPlayerName,
   opponentName: '',
 };
 

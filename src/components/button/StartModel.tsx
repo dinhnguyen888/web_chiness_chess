@@ -69,7 +69,7 @@ const StartModel: React.FC<StartModelProps> = ({ visible }) => {
           <RadioButton value={5} style={radioButtonStyle}>Chơi online</RadioButton>
         </RadioGroup>
       </div>
-      {options.mode !== 5 && (
+      {(options.mode !== 5 && options.mode !== 3) && (
       <div style={{ fontSize: 16, marginTop: 16 }}>
         Độ khó:
         <RadioGroup 
