@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from 'antd';
 import { useAppDispatch, useAppSelector } from '../../hooks';
 import {
   startClick, changeSide, toggleAI, clearChess, showHint, regretMove, beginOnlineMatch, onGameOver
 } from '../../models/chessSlice';
 import StartModel from './StartModel';
+import MatchHistoryModal from '../lobby/MatchHistoryModal';
 
 interface ButtonGroupProps {
   mode: number;
@@ -16,6 +17,7 @@ interface ButtonGroupProps {
 const ButtonGroup: React.FC<ButtonGroupProps> = ({ mode, side, showModel, historyLength }) => {
   const dispatch = useAppDispatch();
   const isLoggedIn = useAppSelector(s => s.chess.isLoggedIn);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const containerStyle = {
     height: '100%',
@@ -52,7 +54,7 @@ const ButtonGroup: React.FC<ButtonGroupProps> = ({ mode, side, showModel, histor
             </Button>
           )}
 
-          <Button size='large'>Lịch sử đấu</Button>
+          <Button size='large' onClick={() => setHistoryOpen(true)}>Lịch sử đấu</Button>
 
           <Button 
             size='large' 
@@ -72,6 +74,7 @@ const ButtonGroup: React.FC<ButtonGroupProps> = ({ mode, side, showModel, histor
           </Button>
         </div>
         <StartModel visible={showModel} />
+        <MatchHistoryModal open={historyOpen} onClose={() => setHistoryOpen(false)} />
       </div>
     );
   }

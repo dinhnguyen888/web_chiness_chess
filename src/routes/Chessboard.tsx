@@ -2,6 +2,7 @@ import React from 'react';
 import { style } from 'typestyle';
 import { useAppSelector } from '../hooks';
 import { useOnlinePlay } from '../hooks/useOnlinePlay';
+import { useGameHistoryReporter } from '../hooks/useGameHistoryReporter';
 import ChessBoardCanvas from '../components/board/ChessBoardCanvas';
 import ButtonGroup from '../components/button/ButtonGroup';
 import WinnerModel from '../components/button/WinnerModel';
@@ -62,6 +63,7 @@ const buttonBarStyle = style({
 const ChessBoard: React.FC = () => {
   const { mode, side, showModel, history, color, winner, roomStatus } = useAppSelector(s => s.chess);
   useOnlinePlay();
+  useGameHistoryReporter(); // Tự lưu lịch sử khi ván Người vs Máy kết thúc
 
   const isOnlinePlaying = mode === 5 && roomStatus === 'playing';
 

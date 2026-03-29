@@ -25,10 +25,11 @@ export function useOnlinePlay() {
   const chessChange = useAppSelector((s) => s.chess.chessChange);
   const board = useAppSelector((s) => s.chess.board);
   const winner = useAppSelector((s) => s.chess.winner);
-  const playerName = useAppSelector((s) => s.chess.playerName);
+
 
   const wsRef = useRef<WebSocket | null>(null);
   const lastSentPaceLenRef = useRef(0);
+  const matchStartTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (mode !== 5) {
@@ -126,6 +127,7 @@ export function useOnlinePlay() {
         const opponentName = typeof msg.opponentName === 'string' ? msg.opponentName : 'Opponent';
         message.success(`Trận đấu bắt đầu! Đối thủ: ${opponentName}`);
         lastSentPaceLenRef.current = 0;
+        matchStartTimeRef.current = Date.now();   // ← ghi nhận giờ bắt đầu
         dispatch(onlineMatched({ color: msg.color, orderSide: msg.orderSide as number, opponentName }));
         return;
       }
@@ -189,6 +191,12 @@ export function useOnlinePlay() {
     if (!piece) return;
 
     lastSentPaceLenRef.current = paceHistory.length;
+
+    // Tính thời lượng trận đấu (giây)
+    const duration_seconds = matchStartTimeRef.current
+      ? Math.floor((Date.now() - matchStartTimeRef.current) / 1000)
+      : 0;
+
     ws.send(
       JSON.stringify({
         type: 'move',
@@ -196,6 +204,7 @@ export function useOnlinePlay() {
         to: [i, j],
         piece,
         winner: winner ?? null,
+        duration_seconds,   // gửi kèm để server lưu vào DB
       })
     );
   }, [mode, roomStatus, paceHistory, chessChange, board, winner]);

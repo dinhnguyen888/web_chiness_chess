@@ -37,7 +37,18 @@ const WinnerModel: React.FC<WinnerModelProps> = ({ mode, color, winner }) => {
       onCancel={() => dispatch(onGameOver())}
       footer={[
         <Button key='1' size="large" onClick={() => dispatch(startClick())}>Chơi lại</Button>,
-        <Button key='2' type="primary" size="large" onClick={() => dispatch(onGameOver())}>
+        <Button 
+          key='2' 
+          type="primary" 
+          size="large" 
+          onClick={() => {
+            if (mode === 1) {
+              window.location.reload();
+            } else {
+              dispatch(onGameOver());
+            }
+          }}
+        >
           Đồng ý
         </Button>,
       ]}
