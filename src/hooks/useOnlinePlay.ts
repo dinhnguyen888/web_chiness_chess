@@ -205,6 +205,7 @@ export function useOnlinePlay() {
         piece,
         winner: winner ?? null,
         duration_seconds,   // gửi kèm để server lưu vào DB
+        moves: winner !== null ? paceHistory : undefined,
       })
     );
   }, [mode, roomStatus, paceHistory, chessChange, board, winner]);

@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Table, Tag, Typography, Empty, Spin, Statistic, Row, Col } from 'antd';
-import { TrophyOutlined, CloseCircleOutlined, MinusCircleOutlined } from '@ant-design/icons';
+import { Modal, Table, Tag, Typography, Empty, Spin, Statistic, Row, Col, Button } from 'antd';
+import { TrophyOutlined, CloseCircleOutlined, MinusCircleOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import { globalWs } from '../../hooks/useOnlinePlay';
-import { useAppSelector } from '../../hooks';
+import { useAppSelector, useAppDispatch } from '../../hooks';
+import { startReplay } from '../../models/chessSlice';
 
 interface MatchRecord {
+  id: number;
   opponent: string;
   result: 'win' | 'lose' | 'draw';
   played_at: string;
@@ -24,8 +26,11 @@ function formatDuration(seconds: number): string {
 }
 
 const MatchHistoryModal: React.FC<MatchHistoryModalProps> = ({ open, onClose }) => {
+  const dispatch = useAppDispatch();
   const [records, setRecords] = useState<MatchRecord[]>([]);
   const [loading, setLoading] = useState(false);
+  const [replayLoading, setReplayLoading] = useState<number | null>(null);
+  const [wsRef, setWsRef] = useState<WebSocket | null>(null);
   const playerName = useAppSelector(s => s.chess.playerName);
   const isLoggedIn = useAppSelector(s => s.chess.isLoggedIn);
 
@@ -53,17 +58,18 @@ const MatchHistoryModal: React.FC<MatchHistoryModalProps> = ({ open, onClose }) 
 
     if (globalWs && globalWs.readyState === WebSocket.OPEN) {
       fetchViaWs(globalWs);
+      setWsRef(globalWs);
     } else {
-      // Tạo kết nối tạm để lấy dữ liệu (không cần auth vì đã có token)
+      // Tạo kết nối tạm để lấy dữ liệu
       const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsUrl = import.meta.env.DEV
         ? `${proto}//${window.location.host}/ws`
         : `${proto}//${window.location.hostname}:8080`;
       const tempWs = new WebSocket(wsUrl);
+      setWsRef(tempWs);
       tempWs.onopen = () => {
         const token = localStorage.getItem('chess_jwt_token');
         if (token) {
-          // Xác thực trước rồi mới lấy history
           const authHandler = (ev: MessageEvent) => {
             const msg = JSON.parse(ev.data as string);
             if (msg.type === 'auth_success') {
@@ -80,6 +86,25 @@ const MatchHistoryModal: React.FC<MatchHistoryModalProps> = ({ open, onClose }) 
       tempWs.onerror = () => setLoading(false);
     }
   }, [open, isLoggedIn]);
+
+  const handleReplay = (matchId: number) => {
+    const ws = wsRef;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    setReplayLoading(matchId);
+    const handler = (ev: MessageEvent) => {
+      try {
+        const msg = JSON.parse(ev.data as string);
+        if (msg.type === 'replay_data' && msg.match_id === matchId) {
+          ws.removeEventListener('message', handler);
+          setReplayLoading(null);
+          dispatch(startReplay(msg.moves as string[]));
+          onClose(); // Đóng modal và chuyển ra màn hình cờ
+        }
+      } catch { /* ignore */ }
+    };
+    ws.addEventListener('message', handler);
+    ws.send(JSON.stringify({ type: 'get_replay', match_id: matchId }));
+  };
 
   const wins  = records.filter(r => r.result === 'win').length;
   const loses = records.filter(r => r.result === 'lose').length;
@@ -118,6 +143,22 @@ const MatchHistoryModal: React.FC<MatchHistoryModalProps> = ({ open, onClose }) 
       title: 'Thời gian',
       dataIndex: 'played_at',
       key: 'played_at',
+    },
+    {
+      title: '',
+      key: 'action',
+      width: 95,
+      render: (_: unknown, record: MatchRecord) => (
+        <Button
+          type="link"
+          size="small"
+          icon={<PlayCircleOutlined />}
+          loading={replayLoading === record.id}
+          onClick={() => handleReplay(record.id)}
+        >
+          Xem lại
+        </Button>
+      ),
     },
   ];
 

@@ -54,6 +54,8 @@ export interface gameState {
   chat: ChatMessage[];
   playerName: string;
   opponentName: string;
+  replayMoves: string[];
+  replayIndex: number;
 }
 
 let initIsLoggedIn = false;
@@ -99,6 +101,8 @@ const initialState: gameState = {
   chat: [],
   playerName: initPlayerName,
   opponentName: '',
+  replayMoves: [],
+  replayIndex: 0,
 };
 
 /** Lật bàn nhìn đối diện: x' = (cols-1)-x, y' = (rows-1)-y — bàn 9×10 ô quen thuộc tương ứng x'=8-x, y'=9-y. */
@@ -167,6 +171,7 @@ const chessSlice = createSlice({
       state.showModel = false;
     },
     chessClick(state, action: PayloadAction<ChessProps>) {
+      if (state.mode === 6) return state; // Blocking in replay mode
       if (state.mode === 2 || (state.mode === 1 && state.side === -1) || (state.mode === 5 && state.side !== 1)) return state;
       
       if (state.clearChessMode) {
@@ -227,6 +232,7 @@ const chessSlice = createSlice({
       }
     },
     boardClick(state, action: PayloadAction<{x: number, y: number, offsetLeft: number, offsetTop: number}>) {
+      if (state.mode === 6) return state; // Blocking in replay mode
       if (state.mode === 2 || (state.mode === 1 && state.side === -1) || (state.mode === 5 && state.side !== 1)) return state;
       
       const { x, y, offsetLeft, offsetTop } = action.payload;
@@ -473,6 +479,70 @@ const chessSlice = createSlice({
       state.paceHistory.push(state.chessChange.join());
       state.nextPace = null;
       state.click = null;
+    },
+    startReplay(state, action: PayloadAction<string[]>) {
+      state.mode = 6;
+      state.replayMoves = action.payload;
+      state.replayIndex = 0;
+      state.side = 1; // Luôn hiển thị bắt đầu
+      state.winner = null;
+      state.click = null;
+      state.nextPace = null;
+      state.chessChange = null;
+      state.paceHistory = [];
+      const initialBoard = [
+        ['C0', 'M0', 'X0', 'S0', 'J0', 'S1', 'X1', 'M1', 'C1'],
+        [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+        [undefined, 'P0', undefined, undefined, undefined, undefined, undefined, 'P1', undefined],
+        ['Z0', undefined, 'Z1', undefined, 'Z2', undefined, 'Z3', undefined, 'Z4'],
+        [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+        [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+        ['z0', undefined, 'z1', undefined, 'z2', undefined, 'z3', undefined, 'z4'],
+        [undefined, 'p0', undefined, undefined, undefined, undefined, undefined, 'p1', undefined],
+        [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+        ['c0', 'm0', 'x0', 's0', 'j0', 's1', 'x1', 'm1', 'c1']
+      ];
+      state.board = initialBoard;
+      state.history = [initialBoard.map(row => [...row])];
+    },
+    nextReplayMove(state) {
+      if (state.mode !== 6 || state.replayIndex >= state.replayMoves.length) return state;
+      const moveStr = state.replayMoves[state.replayIndex];
+      // moveStr format: "i,j,oldi,oldj,pieceSide"
+      // or "[[i,j],[oldi,oldj],pieceSide]"
+      try {
+        const parts = moveStr.replace(/[\[\]]/g, '').split(',').map(Number);
+        if (parts.length === 5) {
+          const [i, j, oldi, oldj, pieceSide] = parts;
+          const piece = state.board[oldi][oldj];
+          if (piece) {
+            state.board[i][j] = piece;
+            state.board[oldi][oldj] = undefined;
+            state.chessChange = [[i, j], [oldi, oldj], pieceSide];
+          }
+        }
+      } catch (e) { /* ignore */ }
+      state.history.push(state.board.map(row => [...row]));
+      state.replayIndex++;
+      state.side = -state.side;
+    },
+    prevReplayMove(state) {
+      if (state.mode !== 6 || state.replayIndex <= 0) return state;
+      state.history.pop();
+      state.board = state.history[state.history.length - 1].map(row => [...row]);
+      state.replayIndex--;
+      state.side = -state.side;
+      state.chessChange = null;
+    },
+    exitReplay(state) {
+      state.mode = 0;
+      state.side = 0;
+      state.board = [];
+      state.click = null;
+      state.chessChange = null;
+      state.history = [];
+      state.replayMoves = [];
+      state.replayIndex = 0;
     }
   }
 });
@@ -481,7 +551,8 @@ export const {
   startClick, onModelOK, onModelCancel, chessClick, boardClick,
   AIClick, toggleAI, onGameOver, changeSide, clearChess, showHint, regretMove,
   beginOnlineMatch, onlineMatched, onlineAborted, applyRemoteMove, updateRoomList, addChatMessage,
-  hostRoomCreated, playerJoinedRoom, guestJoined, guestLeft, loginSuccess
+  hostRoomCreated, playerJoinedRoom, guestJoined, guestLeft, loginSuccess,
+  startReplay, nextReplayMove, prevReplayMove, exitReplay
 } = chessSlice.actions;
 
 export default chessSlice.reducer;

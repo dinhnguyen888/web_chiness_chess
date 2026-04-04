@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from 'antd';
 import { useAppDispatch, useAppSelector } from '../../hooks';
 import {
-  startClick, changeSide, toggleAI, clearChess, showHint, regretMove, beginOnlineMatch, onGameOver
+  startClick, changeSide, toggleAI, clearChess, showHint, regretMove, beginOnlineMatch, onGameOver,
+  prevReplayMove, nextReplayMove, exitReplay
 } from '../../models/chessSlice';
 import StartModel from './StartModel';
 import MatchHistoryModal from '../lobby/MatchHistoryModal';
@@ -17,7 +18,30 @@ interface ButtonGroupProps {
 const ButtonGroup: React.FC<ButtonGroupProps> = ({ mode, side, showModel, historyLength }) => {
   const dispatch = useAppDispatch();
   const isLoggedIn = useAppSelector(s => s.chess.isLoggedIn);
+  const replayIndex = useAppSelector(s => s.chess.replayIndex);
+  const replayTotal = useAppSelector(s => s.chess.replayMoves.length);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [autoPlay, setAutoPlay] = useState(false);
+  const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Tự động phát: mỗi 1.2s dispatch nextReplayMove
+  useEffect(() => {
+    if (autoPlay) {
+      autoPlayRef.current = setInterval(() => {
+        dispatch(nextReplayMove());
+      }, 1200);
+    } else {
+      if (autoPlayRef.current) clearInterval(autoPlayRef.current);
+    }
+    return () => { if (autoPlayRef.current) clearInterval(autoPlayRef.current); };
+  }, [autoPlay, dispatch]);
+
+  // Tự dừng khi đến nước cuối
+  useEffect(() => {
+    if (autoPlay && replayIndex >= replayTotal) {
+      setAutoPlay(false);
+    }
+  }, [replayIndex, replayTotal, autoPlay]);
 
   const containerStyle = {
     height: '100%',
@@ -56,7 +80,7 @@ const ButtonGroup: React.FC<ButtonGroupProps> = ({ mode, side, showModel, histor
 
           <Button size='large' onClick={() => setHistoryOpen(true)}>Lịch sử đấu</Button>
 
-          <Button 
+          {/* <Button 
             size='large' 
             style={{
               background: 'linear-gradient(45deg, #f1c40f, #e67e22)',
@@ -71,10 +95,52 @@ const ButtonGroup: React.FC<ButtonGroupProps> = ({ mode, side, showModel, histor
             onClick={() => dispatch(beginOnlineMatch(''))}
           >
             🏆 Đấu hạng
-          </Button>
+          </Button> */}
         </div>
         <StartModel visible={showModel} />
         <MatchHistoryModal open={historyOpen} onClose={() => setHistoryOpen(false)} />
+      </div>
+    );
+  }
+
+  if (mode === 6) {
+    const isEnd = replayIndex >= replayTotal;
+    return (
+      <div style={containerStyle}>
+        <Button
+          size='large'
+          onClick={() => { setAutoPlay(false); dispatch(prevReplayMove()); }}
+          disabled={replayIndex === 0}
+        >
+          ◄ Trước
+        </Button>
+
+        <Button
+          size='large'
+          type={autoPlay ? 'default' : 'primary'}
+          onClick={() => setAutoPlay(p => !p)}
+          disabled={isEnd}
+          style={autoPlay ? { borderColor: '#faad14', color: '#faad14' } : {}}
+        >
+          {autoPlay ? '⏸ Dừng' : '▶ Tự động'}
+        </Button>
+
+        <Button
+          size='large'
+          onClick={() => { setAutoPlay(false); dispatch(nextReplayMove()); }}
+          disabled={isEnd}
+        >
+          Sau ►
+        </Button>
+
+        {/* Bước hiện tại */}
+        <span style={{ lineHeight: '40px', color: '#aaa', fontSize: 13 }}>
+          {replayIndex} / {replayTotal}
+        </span>
+
+        <Button danger size="large" onClick={() => { setAutoPlay(false); dispatch(exitReplay()); }}>
+          Thoát xem
+        </Button>
       </div>
     );
   }

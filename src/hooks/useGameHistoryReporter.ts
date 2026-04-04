@@ -7,6 +7,7 @@ export function useGameHistoryReporter() {
   const winner = useAppSelector((s) => s.chess.winner);
   const difficulty = useAppSelector((s) => s.chess.difficulty);
   const isLoggedIn = useAppSelector((s) => s.chess.isLoggedIn);
+  const paceHistory = useAppSelector((s) => s.chess.paceHistory);
 
   // Tránh gửi 2 lần cho cùng một kết quả
   const reportedWinnerRef = useRef<number | null>(undefined);
@@ -80,6 +81,7 @@ export function useGameHistoryReporter() {
             opponent: diffLabel,
             result,
             duration_seconds: duration,
+            moves: paceHistory,
           }));
           // Đóng sau khi gửi xong
           setTimeout(() => ws.close(), 300);
@@ -88,5 +90,5 @@ export function useGameHistoryReporter() {
     };
 
     ws.onerror = () => ws.close();
-  }, [winner, mode, difficulty, isLoggedIn]);
+  }, [winner, mode, difficulty, isLoggedIn, paceHistory]);
 }
