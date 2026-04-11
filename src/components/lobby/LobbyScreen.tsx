@@ -1,7 +1,9 @@
 import React from 'react';
 import { Button, Typography } from 'antd';
-import { TeamOutlined } from '@ant-design/icons';
+import { TeamOutlined, SettingOutlined } from '@ant-design/icons';
 import { useLobby } from '../../hooks/useLobby';
+import { useAppSelector } from '../../hooks';
+import { Link } from 'react-router-dom';
 import CreateRoomPanel from './CreateRoomPanel';
 import RoomList from './RoomList';
 
@@ -11,6 +13,7 @@ import RoomList from './RoomList';
  */
 const LobbyScreen: React.FC = () => {
   const { exitLobby } = useLobby();
+  const userRole = useAppSelector(s => s.chess.userRole);
 
   return (
     <div style={{
@@ -31,7 +34,14 @@ const LobbyScreen: React.FC = () => {
         <CreateRoomPanel />
         <RoomList />
 
-        <div style={{ textAlign: 'center' }}>
+        <div style={{ textAlign: 'center', display: 'flex', justifyContent: 'center', gap: 15 }}>
+          {userRole === 'admin' && (
+            <Link to="/admin">
+              <Button icon={<SettingOutlined />} type="primary" ghost>
+                Admin Dashboard
+              </Button>
+            </Link>
+          )}
           <Button onClick={exitLobby} danger type="text" style={{ color: 'rgba(255,100,100,0.6)' }}>
             Thoát
           </Button>

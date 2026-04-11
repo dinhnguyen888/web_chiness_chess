@@ -43,11 +43,18 @@ const AuthScreen: React.FC = () => {
         message.error(data.message || 'Có lỗi xảy ra');
         return;
       }
+      
+      let role = 'user';
       if (data.token) {
         localStorage.setItem('chess_jwt_token', data.token);
+        try {
+          const payload = JSON.parse(atob(data.token.split('.')[1]));
+          role = payload.role || 'user';
+        } catch (e) { /* ignore */ }
       }
+      
       if (data.username) {
-        dispatch(loginSuccess(data.username));
+        dispatch(loginSuccess({ username: data.username, role }));
       }
       message.success(mode === 'register' ? 'Đăng ký thành công!' : 'Đăng nhập thành công!');
     } catch {

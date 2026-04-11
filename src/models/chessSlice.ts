@@ -54,12 +54,14 @@ export interface gameState {
   chat: ChatMessage[];
   playerName: string;
   opponentName: string;
+  userRole: string;
   replayMoves: string[];
   replayIndex: number;
 }
 
 let initIsLoggedIn = false;
 let initPlayerName = '';
+let initUserRole = 'user';
 try {
   const token = localStorage.getItem('chess_jwt_token');
   if (token) {
@@ -71,6 +73,7 @@ try {
     if (payloadJson && payloadJson.username) {
       initIsLoggedIn = true;
       initPlayerName = payloadJson.username;
+      initUserRole = payloadJson.role || 'user';
     }
   }
 } catch (e) {
@@ -101,6 +104,7 @@ const initialState: gameState = {
   chat: [],
   playerName: initPlayerName,
   opponentName: '',
+  userRole: initUserRole,
   replayMoves: [],
   replayIndex: 0,
 };
@@ -441,9 +445,10 @@ const chessSlice = createSlice({
       state.opponentName = '';
       state.chat = [];
     },
-    loginSuccess(state, action: PayloadAction<string>) {
+    loginSuccess(state, action: PayloadAction<{ username: string, role: string }>) {
       state.isLoggedIn = true;
-      state.playerName = action.payload;
+      state.playerName = action.payload.username;
+      state.userRole = action.payload.role;
     },
     applyRemoteMove(
       state,

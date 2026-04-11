@@ -76,22 +76,8 @@ const MatchHistoryModal: React.FC<MatchHistoryModalProps> = ({ open, onClose }) 
   }, [open, isLoggedIn]);
 
   const handleReplay = (matchId: number) => {
-    const ws = wsRef;
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    setReplayLoading(matchId);
-    const handler = (ev: MessageEvent) => {
-      try {
-        const msg = JSON.parse(ev.data as string);
-        if (msg.type === 'replay_data' && msg.match_id === matchId) {
-          ws.removeEventListener('message', handler);
-          setReplayLoading(null);
-          dispatch(startReplay(msg.moves as string[]));
-          onClose(); // Đóng modal và chuyển ra màn hình cờ
-        }
-      } catch { /* ignore */ }
-    };
-    ws.addEventListener('message', handler);
-    ws.send(JSON.stringify({ type: 'get_replay', match_id: matchId }));
+    window.open(`/replay/${matchId}`, '_blank');
+    onClose();
   };
 
   const wins  = records.filter(r => r.result === 'win').length;
