@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useAppSelector } from './index';
+import { wsUrlWithToken } from '../config/server';
 
 
 export function useGameHistoryReporter() {
@@ -58,24 +59,13 @@ export function useGameHistoryReporter() {
 
     matchStartRef.current = null; // Reset cho ván tiếp theo
 
-    // Mở WS tạm → xác thực → gửi game_result → đóng
-    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const url = import.meta.env.DEV
-      ? `${proto}//${window.location.host}/ws`
-      : `${proto}//${window.location.hostname}:8080`;
-
-    const ws = new WebSocket(url);
-
-    ws.onopen = () => {
-      // Bước 1: xác thực JWT
-      ws.send(JSON.stringify({ type: 'verify_jwt', token }));
-    };
+    // Mở WS tạm (JWT trong query) → chờ auth_success → gửi game_result → đóng
+    const ws = new WebSocket(wsUrlWithToken(token));
 
     ws.onmessage = (ev) => {
       try {
         const msg = JSON.parse(ev.data as string);
         if (msg.type === 'auth_success') {
-          // Bước 2: gửi kết quả
           ws.send(JSON.stringify({
             type: 'game_result',
             opponent: diffLabel,
@@ -83,7 +73,6 @@ export function useGameHistoryReporter() {
             duration_seconds: duration,
             moves: paceHistory,
           }));
-          // Đóng sau khi gửi xong
           setTimeout(() => ws.close(), 300);
         }
       } catch { /* ignore */ }

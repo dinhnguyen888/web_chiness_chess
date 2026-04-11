@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Modal, Table, Tag, Typography, Empty, Spin, Statistic, Row, Col, Button } from 'antd';
 import { TrophyOutlined, CloseCircleOutlined, MinusCircleOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import { globalWs } from '../../hooks/useOnlinePlay';
+import { wsUrlWithToken } from '../../config/server';
 import { useAppSelector, useAppDispatch } from '../../hooks';
 import { startReplay } from '../../models/chessSlice';
 
@@ -60,28 +61,15 @@ const MatchHistoryModal: React.FC<MatchHistoryModalProps> = ({ open, onClose }) 
       fetchViaWs(globalWs);
       setWsRef(globalWs);
     } else {
-      // Tạo kết nối tạm để lấy dữ liệu
-      const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = import.meta.env.DEV
-        ? `${proto}//${window.location.host}/ws`
-        : `${proto}//${window.location.hostname}:8080`;
-      const tempWs = new WebSocket(wsUrl);
+      const token = localStorage.getItem('chess_jwt_token');
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+      const tempWs = new WebSocket(wsUrlWithToken(token));
       setWsRef(tempWs);
       tempWs.onopen = () => {
-        const token = localStorage.getItem('chess_jwt_token');
-        if (token) {
-          const authHandler = (ev: MessageEvent) => {
-            const msg = JSON.parse(ev.data as string);
-            if (msg.type === 'auth_success') {
-              tempWs.removeEventListener('message', authHandler);
-              fetchViaWs(tempWs);
-            }
-          };
-          tempWs.addEventListener('message', authHandler);
-          tempWs.send(JSON.stringify({ type: 'verify_jwt', token }));
-        } else {
-          setLoading(false);
-        }
+        fetchViaWs(tempWs);
       };
       tempWs.onerror = () => setLoading(false);
     }

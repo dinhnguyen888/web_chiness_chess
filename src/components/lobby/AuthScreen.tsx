@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Input, Button, Typography, message, Segmented } from 'antd';
 import { UserOutlined, LockOutlined, LoginOutlined, UserAddOutlined } from '@ant-design/icons';
-import { useAppSelector } from '../../hooks';
-import { globalWs } from '../../hooks/useOnlinePlay';
+import { useAppSelector, useAppDispatch } from '../../hooks';
+import { loginSuccess } from '../../models/chessSlice';
+import { httpApiUrl } from '../../config/server';
 
 const AuthScreen: React.FC = () => {
+  const dispatch = useAppDispatch();
   const [mode, setMode] = useState<string | number>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -12,10 +14,10 @@ const AuthScreen: React.FC = () => {
 
   const { roomStatus } = useAppSelector(s => s.chess);
 
-  // We only show this when WS is connected but user is not logged in
+  // Chưa đăng nhập trong sảnh online (chờ HTTP login để lấy JWT rồi mới mở WebSocket)
   if (roomStatus !== 'listing') return null;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!username.trim() || !password.trim()) {
       message.error("Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu");
       return;
@@ -27,18 +29,30 @@ const AuthScreen: React.FC = () => {
     if (username.trim().includes(" ") || username.trim().includes("@")) {
       message.warning("Vui lòng sử dụng Tên đăng nhập ngắn gọn, không dùng Email hay chứa dấu cách");
     }
-    
-    setLoading(true);
-    setTimeout(() => setLoading(false), 2000); 
 
-    if (globalWs && globalWs.readyState === WebSocket.OPEN) {
-      globalWs.send(JSON.stringify({ 
-        type: mode === 'login' ? 'login' : 'register', 
-        username: username.trim(), 
-        password: password.trim() 
-      }));
-    } else {
-      message.error("Mất kết nối máy chủ");
+    setLoading(true);
+    try {
+      const path = mode === 'login' ? '/login' : '/register';
+      const res = await fetch(httpApiUrl(path), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username.trim(), password: password.trim() }),
+      });
+      const data = (await res.json()) as { type?: string; message?: string; token?: string; username?: string };
+      if (!res.ok) {
+        message.error(data.message || 'Có lỗi xảy ra');
+        return;
+      }
+      if (data.token) {
+        localStorage.setItem('chess_jwt_token', data.token);
+      }
+      if (data.username) {
+        dispatch(loginSuccess(data.username));
+      }
+      message.success(mode === 'register' ? 'Đăng ký thành công!' : 'Đăng nhập thành công!');
+    } catch {
+      message.error('Không kết nối được máy chủ');
+    } finally {
       setLoading(false);
     }
   };
@@ -89,13 +103,13 @@ const AuthScreen: React.FC = () => {
             prefix={<LockOutlined style={{ color: '#bfbfbf' }} />} 
             value={password}
             onChange={e => setPassword(e.target.value)}
-            onPressEnter={handleSubmit}
+            onPressEnter={() => void handleSubmit()}
           />
           
           <Button 
             type="primary" 
             size="large" 
-            onClick={handleSubmit} 
+            onClick={() => void handleSubmit()} 
             loading={loading}
             style={{ 
               marginTop: 12, 
