@@ -6,20 +6,14 @@ import {
   hostRoomCreated, playerJoinedRoom, guestJoined, guestLeft, loginSuccess
 } from '../models/chessSlice';
 import { store } from '../store';
-
-function wsUrl(): string {
-  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  if (import.meta.env.DEV) {
-    return `${proto}//${window.location.host}/ws`;
-  }
-  return `${proto}//${window.location.hostname}:8080`;
-}
+import { wsUrlWithToken } from '../config/server';
 
 export let globalWs: WebSocket | null = null;
 
 export function useOnlinePlay() {
   const dispatch = useAppDispatch();
   const mode = useAppSelector((s) => s.chess.mode);
+  const isLoggedIn = useAppSelector((s) => s.chess.isLoggedIn);
   const roomStatus = useAppSelector((s) => s.chess.roomStatus);
   const paceHistory = useAppSelector((s) => s.chess.paceHistory);
   const chessChange = useAppSelector((s) => s.chess.chessChange);
@@ -41,17 +35,16 @@ export function useOnlinePlay() {
     }
 
     lastSentPaceLenRef.current = 0;
-    const ws = new WebSocket(wsUrl());
+    const token = localStorage.getItem('chess_jwt_token');
+    if (!token) {
+      wsRef.current = null;
+      globalWs = null;
+      return;
+    }
+
+    const ws = new WebSocket(wsUrlWithToken(token));
     wsRef.current = ws;
     globalWs = ws;
-
-    ws.onopen = () => {
-      // Khi WS mở, tự động gửi verify_jwt nếu có token lưu ở localStorage
-      const token = localStorage.getItem('chess_jwt_token');
-      if (token) {
-        ws.send(JSON.stringify({ type: 'verify_jwt', token }));
-      }
-    };
 
     ws.onmessage = (ev) => {
       let data: unknown;
@@ -177,7 +170,7 @@ export function useOnlinePlay() {
       ws.close();
       if (wsRef.current === ws) wsRef.current = null;
     };
-  }, [mode, dispatch]);
+  }, [mode, dispatch, isLoggedIn]);
 
   useEffect(() => {
     if (mode !== 5 || roomStatus !== 'playing') return;
