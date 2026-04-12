@@ -30,7 +30,11 @@ interface UserItem {
 
 const UserManager: React.FC = () => {
   const [users, setUsers] = useState<UserItem[]>([]);
+  const [userTotal, setUserTotal] = useState(0);
+  const [userPage, setUserPage] = useState(1);
   const [reports, setReports] = useState<ReportItem[]>([]);
+  const [reportTotal, setReportTotal] = useState(0);
+  const [reportPage, setReportPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingUser, setEditingUser] = useState<UserItem | null>(null);
@@ -39,29 +43,33 @@ const UserManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState('1');
   const [form] = Form.useForm();
 
-  const fetchReports = async () => {
+  const fetchReports = async (page = 1) => {
     try {
       const token = localStorage.getItem('chess_jwt_token');
-      const res = await fetch(httpApiUrl('/admin/reports'), {
+      const res = await fetch(httpApiUrl(`/admin/reports?page=${page}&limit=10`), {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
-        const data = await res.json();
-        setReports(data);
+        const result = await res.json();
+        setReports(result.data);
+        setReportTotal(result.total);
+        setReportPage(page);
       }
     } catch (e) { console.error(e); }
   };
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (page = 1) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('chess_jwt_token');
-      const res = await fetch(httpApiUrl('/admin/users'), {
+      const res = await fetch(httpApiUrl(`/admin/users?page=${page}&limit=10`), {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
-        const data = await res.json();
-        setUsers(data);
+        const result = await res.json();
+        setUsers(result.data);
+        setUserTotal(result.total);
+        setUserPage(page);
       } else {
         message.error('Không tải được danh sách người dùng');
       }
@@ -329,7 +337,12 @@ const UserManager: React.FC = () => {
               dataSource={users}
               rowKey="id"
               loading={loading}
-              pagination={{ pageSize: 10 }}
+              pagination={{
+                current: userPage,
+                total: userTotal,
+                pageSize: 10,
+                onChange: (page) => fetchUsers(page)
+              }}
             />
           </TabPane>
 
@@ -350,7 +363,12 @@ const UserManager: React.FC = () => {
               dataSource={reports}
               rowKey="id"
               loading={loading}
-              pagination={{ pageSize: 10 }}
+              pagination={{
+                current: reportPage,
+                total: reportTotal,
+                pageSize: 10,
+                onChange: (page) => fetchReports(page)
+              }}
             />
           </TabPane>
         </Tabs>
