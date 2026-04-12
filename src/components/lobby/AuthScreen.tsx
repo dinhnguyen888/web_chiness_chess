@@ -38,7 +38,15 @@ const AuthScreen: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: username.trim(), password: password.trim() }),
       });
-      const data = (await res.json()) as { type?: string; message?: string; token?: string; username?: string };
+      const data = (await res.json()) as { 
+        type?: string; 
+        message?: string; 
+        token?: string; 
+        username?: string;
+        can_chat?: boolean;
+        can_create_room?: boolean;
+      };
+
       if (!res.ok) {
         message.error(data.message || 'Có lỗi xảy ra');
         return;
@@ -54,7 +62,12 @@ const AuthScreen: React.FC = () => {
       }
       
       if (data.username) {
-        dispatch(loginSuccess({ username: data.username, role }));
+        dispatch(loginSuccess({ 
+          username: data.username, 
+          role,
+          canChat: data.can_chat,
+          canCreateRoom: data.can_create_room
+        }));
       }
       message.success(mode === 'register' ? 'Đăng ký thành công!' : 'Đăng nhập thành công!');
     } catch {

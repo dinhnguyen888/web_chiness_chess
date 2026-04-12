@@ -55,6 +55,8 @@ export interface gameState {
   playerName: string;
   opponentName: string;
   userRole: string;
+  canChat: boolean;
+  canCreateRoom: boolean;
   replayMoves: string[];
   replayIndex: number;
 }
@@ -105,6 +107,8 @@ const initialState: gameState = {
   playerName: initPlayerName,
   opponentName: '',
   userRole: initUserRole,
+  canChat: true,
+  canCreateRoom: true,
   replayMoves: [],
   replayIndex: 0,
 };
@@ -445,10 +449,12 @@ const chessSlice = createSlice({
       state.opponentName = '';
       state.chat = [];
     },
-    loginSuccess(state, action: PayloadAction<{ username: string, role: string }>) {
+    loginSuccess(state, action: PayloadAction<{ username: string, role: string, canChat?: boolean, canCreateRoom?: boolean }>) {
       state.isLoggedIn = true;
       state.playerName = action.payload.username;
       state.userRole = action.payload.role;
+      if (action.payload.canChat !== undefined) state.canChat = action.payload.canChat;
+      if (action.payload.canCreateRoom !== undefined) state.canCreateRoom = action.payload.canCreateRoom;
     },
     applyRemoteMove(
       state,

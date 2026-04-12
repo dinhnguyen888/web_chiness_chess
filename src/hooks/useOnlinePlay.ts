@@ -63,7 +63,12 @@ export function useOnlinePlay() {
         if (msg.action !== 'verify') {
             message.success(msg.action === 'register' ? 'Đăng ký thành công!' : 'Đăng nhập thành công!');
         }
-        dispatch(loginSuccess(username));
+        dispatch(loginSuccess({ 
+            username, 
+            role: (msg.role as string) || 'user',
+            canChat: msg.can_chat as boolean,
+            canCreateRoom: msg.can_create_room as boolean
+        }));
         ws.send(JSON.stringify({ type: 'list_rooms', name: username }));
         return;
       }

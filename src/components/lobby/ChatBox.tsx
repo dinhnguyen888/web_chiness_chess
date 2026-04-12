@@ -7,6 +7,7 @@ const ChatBox: React.FC = () => {
   const chat = useAppSelector(s => s.chess.chat);
   const mode = useAppSelector(s => s.chess.mode);
   const roomStatus = useAppSelector(s => s.chess.roomStatus);
+  const canChat = useAppSelector(s => s.chess.canChat);
   const [msg, setMsg] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -43,11 +44,12 @@ const ChatBox: React.FC = () => {
         <Input 
           value={msg} 
           onChange={e => setMsg(e.target.value)} 
-          placeholder="Nhập tin nhắn..." 
+          placeholder={canChat ? "Nhập tin nhắn..." : "Bạn đã bị cấm chat"} 
           onPressEnter={handleSend}
+          disabled={!canChat}
           style={{ background: '#333', color: '#fff', borderColor: '#444' }}
         />
-        <Button type="primary" onClick={handleSend}>Gửi</Button>
+        <Button type="primary" onClick={handleSend} disabled={!canChat}>Gửi</Button>
       </Space.Compact>
     </div>
   );

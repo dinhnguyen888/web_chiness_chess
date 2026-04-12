@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Input, Button, Typography, Space, Checkbox } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useLobby } from '../../hooks/useLobby';
+import { useAppSelector } from '../../hooks';
 
 /**
  * Panel tạo phòng mới với tùy chọn "Tự bắt đầu".
@@ -11,6 +12,7 @@ const CreateRoomPanel: React.FC = () => {
   const [roomName, setRoomName] = useState('');
   const [autoStart, setAutoStart] = useState(false);
   const { createRoom } = useLobby();
+  const canCreateRoom = useAppSelector(s => s.chess.canCreateRoom);
 
   const handleCreate = () => {
     if (!roomName.trim()) return;
@@ -41,8 +43,13 @@ const CreateRoomPanel: React.FC = () => {
         >
           Tự bắt đầu
         </Checkbox>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate} disabled={!roomName.trim()}>
-          Tạo
+        <Button 
+          type="primary" 
+          icon={<PlusOutlined />} 
+          onClick={handleCreate} 
+          disabled={!roomName.trim() || !canCreateRoom}
+        >
+          {canCreateRoom ? "Tạo" : "Bị cấm"}
         </Button>
       </Space>
     </div>
