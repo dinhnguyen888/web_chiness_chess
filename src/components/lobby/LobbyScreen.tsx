@@ -1,19 +1,25 @@
-import React from 'react';
-import { Button, Typography } from 'antd';
-import { TeamOutlined, SettingOutlined } from '@ant-design/icons';
+import React, { useEffect } from 'react';
+import { Button, Typography, Alert } from 'antd';
+import { TeamOutlined, SettingOutlined, WarningOutlined } from '@ant-design/icons';
 import { useLobby } from '../../hooks/useLobby';
 import { useAppSelector } from '../../hooks';
 import { Link } from 'react-router-dom';
 import CreateRoomPanel from './CreateRoomPanel';
 import RoomList from './RoomList';
 
-/**
- * Sảnh chính: danh sách phòng + tạo phòng.
- * Hiển thị khi roomStatus === 'listing'.
- */
 const LobbyScreen: React.FC = () => {
   const { exitLobby } = useLobby();
   const userRole = useAppSelector(s => s.chess.userRole);
+  const [punishment, setPunishment] = React.useState<string | null>(null);
+
+  useEffect(() => {
+    // Đọc cookie punishment_info
+    const cookies = document.cookie.split(';');
+    const pCookie = cookies.find(c => c.trim().startsWith('punishment_info='));
+    if (pCookie) {
+      setPunishment(decodeURIComponent(pCookie.split('=')[1].trim()));
+    }
+  }, []);
 
   return (
     <div style={{
@@ -30,6 +36,21 @@ const LobbyScreen: React.FC = () => {
         <Typography.Title level={3} style={{ color: '#f5d76e', margin: 0, textAlign: 'center' }}>
           <TeamOutlined style={{ marginRight: 10 }} />Sảnh Cờ Tướng
         </Typography.Title>
+        
+        {punishment && (
+          <Alert
+            message="THÔNG BÁO TỪ ADMIN"
+            description={punishment}
+            type="error"
+            showIcon
+            icon={<WarningOutlined />}
+            closable
+            onClose={() => {
+              // Xóa cookie khi đóng alert
+              document.cookie = "punishment_info=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            }}
+          />
+        )}
 
         <CreateRoomPanel />
         <RoomList />

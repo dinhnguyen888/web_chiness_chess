@@ -70,15 +70,16 @@ const ButtonGroup: React.FC<ButtonGroupProps> = ({ mode, side, showModel, histor
               <Button size='large' onClick={() => dispatch(beginOnlineMatch(''))}>Đăng ký</Button>
             </>
           ) : (
-            <Button size='large' onClick={() => {
-              localStorage.removeItem('chess_jwt_token');
-              window.location.reload();
-            }}>
-              Đăng xuất
-            </Button>
+            <>
+              <Button size='large' onClick={() => setHistoryOpen(true)}>Lịch sử đấu</Button>
+              <Button size='large' onClick={() => {
+                localStorage.removeItem('chess_jwt_token');
+                window.location.reload();
+              }}>
+                Đăng xuất
+              </Button>
+            </>
           )}
-
-          <Button size='large' onClick={() => setHistoryOpen(true)}>Lịch sử đấu</Button>
 
           {/* <Button 
             size='large' 

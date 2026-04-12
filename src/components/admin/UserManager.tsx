@@ -86,9 +86,9 @@ const UserManager: React.FC = () => {
 
       const res = await fetch(httpApiUrl('/admin/users'), {
         method,
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}` 
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify(body)
       });
@@ -140,9 +140,9 @@ const UserManager: React.FC = () => {
       const token = localStorage.getItem('chess_jwt_token');
       const res = await fetch(httpApiUrl('/admin/reports'), {
         method: 'PUT',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}` 
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({ id, status })
       });
@@ -155,19 +155,19 @@ const UserManager: React.FC = () => {
 
   const columns = [
     { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
-    { 
-      title: 'Username', 
-      dataIndex: 'username', 
+    {
+      title: 'Username',
+      dataIndex: 'username',
       key: 'username',
       render: (text: string) => <span><UserOutlined style={{ marginRight: 8 }} />{text}</span>
     },
-    { 
-      title: 'Quyền hạn', 
-      dataIndex: 'role', 
+    {
+      title: 'Quyền hạn',
+      dataIndex: 'role',
       key: 'role',
       render: (role: string) => (
-        <span style={{ 
-          color: role === 'admin' ? '#f5222d' : '#1890ff', 
+        <span style={{
+          color: role === 'admin' ? '#f5222d' : '#1890ff',
           fontWeight: 600,
           textTransform: 'uppercase'
         }}>
@@ -181,26 +181,26 @@ const UserManager: React.FC = () => {
       render: (_: any, record: UserItem) => (
         <Space size="middle">
           <Tooltip title="Xử phạt">
-            <Button 
-              shape="circle" 
-              icon={<WarningOutlined />} 
-              onClick={() => setPunishTarget(record.username)} 
+            <Button
+              shape="circle"
+              icon={<WarningOutlined />}
+              onClick={() => setPunishTarget(record.username)}
               danger
             />
           </Tooltip>
           <Tooltip title="Lịch sử đấu">
-            <Button 
-              shape="circle" 
-              icon={<HistoryOutlined />} 
-              onClick={() => setHistoryTarget(record.username)} 
+            <Button
+              shape="circle"
+              icon={<HistoryOutlined />}
+              onClick={() => setHistoryTarget(record.username)}
               type="primary"
               ghost
             />
           </Tooltip>
           <Tooltip title="Chỉnh sửa">
-            <Button 
-              shape="circle" 
-              icon={<EditOutlined />} 
+            <Button
+              shape="circle"
+              icon={<EditOutlined />}
               onClick={() => {
                 setEditingUser(record);
                 form.setFieldsValue({
@@ -209,15 +209,15 @@ const UserManager: React.FC = () => {
                   password: ''
                 });
                 setIsModalVisible(true);
-              }} 
+              }}
             />
           </Tooltip>
           <Tooltip title="Xóa">
-            <Button 
-              shape="circle" 
-              icon={<DeleteOutlined />} 
-              danger 
-              onClick={() => handleDelete(record.id)} 
+            <Button
+              shape="circle"
+              icon={<DeleteOutlined />}
+              danger
+              onClick={() => handleDelete(record.id)}
             />
           </Tooltip>
         </Space>
@@ -228,24 +228,24 @@ const UserManager: React.FC = () => {
   const reportColumns = [
     { title: 'Thời gian', dataIndex: 'created_at', key: 'created_at', width: 160 },
     { title: 'Người tố cáo', dataIndex: 'reporter', key: 'reporter' },
-    { 
-      title: 'Bị tố cáo', 
-      dataIndex: 'reported', 
-      key: 'reported', 
+    {
+      title: 'Bị tố cáo',
+      dataIndex: 'reported',
+      key: 'reported',
       render: (t: string) => (
-        <Button 
-          type="link" 
-          onClick={() => { setActiveTab('1'); setHistoryTarget(t); }} 
+        <Button
+          type="link"
+          onClick={() => { setActiveTab('1'); setHistoryTarget(t); }}
           style={{ padding: 0, fontWeight: 'bold', color: '#cf1322' }}
         >
           {t}
         </Button>
-      ) 
+      )
     },
     { title: 'Lý do', dataIndex: 'reason', key: 'reason' },
-    { 
-      title: 'Trạng thái', 
-      dataIndex: 'status', 
+    {
+      title: 'Trạng thái',
+      dataIndex: 'status',
       key: 'status',
       render: (s: string) => {
         let color = 'gold';
@@ -261,9 +261,9 @@ const UserManager: React.FC = () => {
         <Space size="small">
           {record.match_id > 0 && (
             <Tooltip title="Xem lại trận đấu">
-              <Button 
-                size="small" 
-                icon={<EyeOutlined />} 
+              <Button
+                size="small"
+                icon={<EyeOutlined />}
                 onClick={() => window.open(`/replay/${record.match_id}`, '_blank')}
               >
                 Xem trận
@@ -272,16 +272,16 @@ const UserManager: React.FC = () => {
           )}
           {record.status === 'pending' && (
             <>
-              <Button 
-                size="small" 
-                type="primary" 
+              <Button
+                size="small"
+                type="primary"
                 icon={<CheckCircleOutlined />}
                 onClick={() => setPunishTarget(record.reported)}
               >
                 Hành quyết
               </Button>
-              <Button 
-                size="small" 
+              <Button
+                size="small"
                 icon={<DeleteOutlined />}
                 onClick={() => handleUpdateReportStatus(record.id, 'ignored')}
               >
@@ -303,27 +303,18 @@ const UserManager: React.FC = () => {
               <Button icon={<ArrowLeftOutlined />} shape="circle" />
             </Link>
             <Title level={2} style={{ margin: 0 }}>Quản trị hệ thống</Title>
-            
-            <Badge count={reports.filter(r => r.status === 'pending').length}>
-              <Button 
-                shape="circle" 
-                icon={<WarningOutlined />} 
-                onClick={() => setActiveTab('2')}
-                type={reports.filter(r => r.status === 'pending').length > 0 ? "primary" : "default"}
-              />
-            </Badge>
           </Space>
         </div>
 
         <Tabs activeKey={activeTab} onChange={setActiveTab} type="card">
-          <TabPane 
-            tab={<span><UserOutlined />Người dùng</span>} 
+          <TabPane
+            tab={<span><UserOutlined />Người dùng</span>}
             key="1"
           >
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-              <Button 
-                type="primary" 
-                icon={<PlusOutlined />} 
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
                 onClick={() => {
                   setEditingUser(null);
                   form.resetFields();
@@ -333,16 +324,16 @@ const UserManager: React.FC = () => {
                 Thêm người dùng
               </Button>
             </div>
-            <Table 
-              columns={columns} 
-              dataSource={users} 
-              rowKey="id" 
+            <Table
+              columns={columns}
+              dataSource={users}
+              rowKey="id"
               loading={loading}
               pagination={{ pageSize: 10 }}
             />
           </TabPane>
 
-          <TabPane 
+          <TabPane
             tab={
               <span>
                 <WarningOutlined />
@@ -351,13 +342,13 @@ const UserManager: React.FC = () => {
                   <Badge count={reports.filter(r => r.status === 'pending').length} style={{ marginLeft: 8 }} />
                 )}
               </span>
-            } 
+            }
             key="2"
           >
-            <Table 
-              columns={reportColumns} 
-              dataSource={reports} 
-              rowKey="id" 
+            <Table
+              columns={reportColumns}
+              dataSource={reports}
+              rowKey="id"
               loading={loading}
               pagination={{ pageSize: 10 }}
             />
@@ -406,9 +397,9 @@ const UserManager: React.FC = () => {
         </Modal>
 
         {historyTarget && (
-          <UserHistoryModal 
-            username={historyTarget} 
-            onClose={() => setHistoryTarget(null)} 
+          <UserHistoryModal
+            username={historyTarget}
+            onClose={() => setHistoryTarget(null)}
           />
         )}
 

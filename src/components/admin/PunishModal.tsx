@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, Form, Checkbox, Radio, message, Divider } from 'antd';
+import { Modal, Form, Checkbox, Radio, message, Divider, Input } from 'antd';
 import { httpApiUrl } from '../../config/server';
 
 interface PunishModalProps {
@@ -28,7 +28,9 @@ const PunishModal: React.FC<PunishModalProps> = ({ open, onClose, username }) =>
           username,
           ban_days: values.ban_type === 'none' ? 0 : parseInt(values.ban_type),
           can_chat: !values.actions.includes('mute'),
-          can_create_room: !values.actions.includes('no_room')
+          can_create_room: !values.actions.includes('no_room'),
+          reason: values.reason,
+          reporter: values.reporter
         })
       });
 
@@ -76,6 +78,16 @@ const PunishModal: React.FC<PunishModalProps> = ({ open, onClose, username }) =>
               <Radio value="-1">Khóa vĩnh viễn</Radio>
             </div>
           </Radio.Group>
+        </Form.Item>
+
+        <Divider />
+
+        <Form.Item name="reason" label="Nguyên do vi phạm" rules={[{ required: true, message: 'Vui lòng nhập lý do' }]}>
+          <Input.TextArea rows={2} placeholder="Ví dụ: Gian lận trong trận đấu, xúc phạm người chơi..." />
+        </Form.Item>
+
+        <Form.Item name="reporter" label="Người tố cáo" initialValue="Hệ thống">
+          <Input placeholder="Tên người tố cáo hoặc 'Hệ thống'" />
         </Form.Item>
       </Form>
     </Modal>

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { message } from 'antd';
+import { message, Modal } from 'antd';
 import { useAppDispatch, useAppSelector } from './index';
 import {
   applyRemoteMove, onlineMatched, onlineAborted, updateRoomList, addChatMessage,
@@ -113,6 +113,22 @@ export function useOnlinePlay() {
 
       if (msg.type === 'chat') {
         dispatch(addChatMessage({ sender: msg.sender as string, message: msg.message as string }));
+        return;
+      }
+
+      if (msg.type === 'punishment_notify') {
+        const info = `Lý do: ${msg.reason}. Người tố cáo: ${msg.reporter}. ${msg.message}`;
+        Modal.warning({
+          title: 'THÔNG BÁO XỬ PHẠT',
+          content: info,
+          centered: true,
+          okText: 'Tôi đã hiểu',
+        });
+        
+        // Lưu vào cookie trong 7 ngày
+        const d = new Date();
+        d.setTime(d.getTime() + (7*24*60*60*1000));
+        document.cookie = "punishment_info=" + encodeURIComponent(info) + ";expires=" + d.toUTCString() + ";path=/";
         return;
       }
 
