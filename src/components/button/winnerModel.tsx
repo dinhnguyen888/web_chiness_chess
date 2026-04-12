@@ -2,6 +2,8 @@ import React from 'react';
 import { Modal, Button } from 'antd';
 import { useAppDispatch } from '../../hooks';
 import { startClick, onGameOver } from '../../models/chessSlice';
+import { useAppSelector } from '../../hooks';
+import ReportModal from '../lobby/ReportModal';
 
 interface WinnerModelProps {
   mode: number;
@@ -11,6 +13,8 @@ interface WinnerModelProps {
 
 const WinnerModel: React.FC<WinnerModelProps> = ({ mode, color, winner }) => {
   const dispatch = useAppDispatch();
+  const { opponentName } = useAppSelector(s => s.chess);
+  const [reportOpen, setReportOpen] = React.useState(false);
 
   if (winner === null) return null;
 
@@ -36,6 +40,11 @@ const WinnerModel: React.FC<WinnerModelProps> = ({ mode, color, winner }) => {
       open={Math.abs(winner) === 1}
       onCancel={() => dispatch(onGameOver())}
       footer={[
+        mode === 5 && (
+          <Button key='report' danger onClick={() => setReportOpen(true)}>
+            Tố cáo gian lận
+          </Button>
+        ),
         <Button key='1' size="large" onClick={() => dispatch(startClick())}>Chơi lại</Button>,
         <Button 
           key='2' 
@@ -56,6 +65,14 @@ const WinnerModel: React.FC<WinnerModelProps> = ({ mode, color, winner }) => {
       <p style={{ fontSize: '18px', textAlign: 'center' }}>
         {renderText()}
       </p>
+      
+      {mode === 5 && (
+        <ReportModal 
+          open={reportOpen} 
+          onClose={() => setReportOpen(false)} 
+          reportedUser={opponentName} 
+        />
+      )}
     </Modal>
   );
 };

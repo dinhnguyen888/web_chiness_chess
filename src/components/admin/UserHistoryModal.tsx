@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Table, Button, Tag, message } from 'antd';
-import { EyeOutlined } from '@ant-design/icons';
+import { Modal, Table, Button, Tag, message, Space, Tooltip } from 'antd';
+import { EyeOutlined, WarningOutlined } from '@ant-design/icons';
 import { httpApiUrl } from '../../config/server';
 import { useAppDispatch } from '../../hooks';
 import { startReplay } from '../../models/chessSlice';
@@ -11,6 +11,7 @@ interface MatchRecord {
   result: string;
   played_at: string;
   duration_seconds: number;
+  has_report: boolean;
 }
 
 interface UserHistoryModalProps {
@@ -57,9 +58,18 @@ const UserHistoryModal: React.FC<UserHistoryModalProps> = ({ username, onClose }
       title: 'Kết quả', 
       dataIndex: 'result', 
       key: 'result',
-      render: (res: string) => {
+      render: (res: string, record: MatchRecord) => {
         const color = res === 'win' ? 'green' : (res === 'loss' ? 'red' : 'orange');
-        return <Tag color={color}>{res.toUpperCase()}</Tag>;
+        return (
+          <Space>
+            <Tag color={color}>{res.toUpperCase()}</Tag>
+            {record.has_report && (
+              <Tooltip title="Trận đấu này có báo cáo vi phạm">
+                <WarningOutlined style={{ color: '#faad14', fontSize: '16px' }} />
+              </Tooltip>
+            )}
+          </Space>
+        );
       }
     },
     {

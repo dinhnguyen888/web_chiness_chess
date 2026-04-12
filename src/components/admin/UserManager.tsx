@@ -1,25 +1,56 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Space, Modal, Form, Input, Select, message, Tooltip, Typography } from 'antd';
-import { EditOutlined, DeleteOutlined, HistoryOutlined, PlusOutlined, UserOutlined, ArrowLeftOutlined, LockOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Modal, Form, Input, Select, message, Tooltip, Typography, Tabs, Badge, Tag } from 'antd';
+import { EditOutlined, DeleteOutlined, HistoryOutlined, PlusOutlined, UserOutlined, ArrowLeftOutlined, LockOutlined, WarningOutlined, EyeOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { httpApiUrl } from '../../config/server';
 import { Link } from 'react-router-dom';
 import UserHistoryModal from './UserHistoryModal';
+import PunishModal from './PunishModal';
 
 const { Title } = Typography;
+const { TabPane } = Tabs;
+
+interface ReportItem {
+  id: number;
+  reporter: string;
+  reported: string;
+  match_id: number;
+  reason: string;
+  status: string;
+  created_at: string;
+}
 
 interface UserItem {
   id: number;
   username: string;
   role: string;
+  banned_until?: string;
+  can_chat?: boolean;
+  can_create_room?: boolean;
 }
 
 const UserManager: React.FC = () => {
   const [users, setUsers] = useState<UserItem[]>([]);
+  const [reports, setReports] = useState<ReportItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingUser, setEditingUser] = useState<UserItem | null>(null);
   const [historyTarget, setHistoryTarget] = useState<string | null>(null);
+  const [punishTarget, setPunishTarget] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('1');
   const [form] = Form.useForm();
+
+  const fetchReports = async () => {
+    try {
+      const token = localStorage.getItem('chess_jwt_token');
+      const res = await fetch(httpApiUrl('/admin/reports'), {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setReports(data);
+      }
+    } catch (e) { console.error(e); }
+  };
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -43,6 +74,7 @@ const UserManager: React.FC = () => {
 
   useEffect(() => {
     fetchUsers();
+    fetchReports();
   }, []);
 
   const handleCreateOrUpdate = async (values: any) => {
@@ -103,6 +135,24 @@ const UserManager: React.FC = () => {
     });
   };
 
+  const handleUpdateReportStatus = async (id: number, status: string) => {
+    try {
+      const token = localStorage.getItem('chess_jwt_token');
+      const res = await fetch(httpApiUrl('/admin/reports'), {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({ id, status })
+      });
+      if (res.ok) {
+        message.success('Cập nhật thành công');
+        fetchReports();
+      }
+    } catch (e) { console.error(e); }
+  };
+
   const columns = [
     { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
     { 
@@ -130,6 +180,14 @@ const UserManager: React.FC = () => {
       key: 'action',
       render: (_: any, record: UserItem) => (
         <Space size="middle">
+          <Tooltip title="Xử phạt">
+            <Button 
+              shape="circle" 
+              icon={<WarningOutlined />} 
+              onClick={() => setPunishTarget(record.username)} 
+              danger
+            />
+          </Tooltip>
           <Tooltip title="Lịch sử đấu">
             <Button 
               shape="circle" 
@@ -167,6 +225,75 @@ const UserManager: React.FC = () => {
     },
   ];
 
+  const reportColumns = [
+    { title: 'Thời gian', dataIndex: 'created_at', key: 'created_at', width: 160 },
+    { title: 'Người tố cáo', dataIndex: 'reporter', key: 'reporter' },
+    { 
+      title: 'Bị tố cáo', 
+      dataIndex: 'reported', 
+      key: 'reported', 
+      render: (t: string) => (
+        <Button 
+          type="link" 
+          onClick={() => { setActiveTab('1'); setHistoryTarget(t); }} 
+          style={{ padding: 0, fontWeight: 'bold', color: '#cf1322' }}
+        >
+          {t}
+        </Button>
+      ) 
+    },
+    { title: 'Lý do', dataIndex: 'reason', key: 'reason' },
+    { 
+      title: 'Trạng thái', 
+      dataIndex: 'status', 
+      key: 'status',
+      render: (s: string) => {
+        let color = 'gold';
+        if (s === 'resolved') color = 'green';
+        if (s === 'ignored') color = 'gray';
+        return <Tag color={color}>{s.toUpperCase()}</Tag>;
+      }
+    },
+    {
+      title: 'Hành động',
+      key: 'action',
+      render: (_: any, record: ReportItem) => (
+        <Space size="small">
+          {record.match_id > 0 && (
+            <Tooltip title="Xem lại trận đấu">
+              <Button 
+                size="small" 
+                icon={<EyeOutlined />} 
+                onClick={() => window.open(`/replay/${record.match_id}`, '_blank')}
+              >
+                Xem trận
+              </Button>
+            </Tooltip>
+          )}
+          {record.status === 'pending' && (
+            <>
+              <Button 
+                size="small" 
+                type="primary" 
+                icon={<CheckCircleOutlined />}
+                onClick={() => setPunishTarget(record.reported)}
+              >
+                Hành quyết
+              </Button>
+              <Button 
+                size="small" 
+                icon={<DeleteOutlined />}
+                onClick={() => handleUpdateReportStatus(record.id, 'ignored')}
+              >
+                Bỏ qua
+              </Button>
+            </>
+          )}
+        </Space>
+      )
+    }
+  ];
+
   return (
     <div style={{ padding: 24, background: '#f0f2f5', minHeight: '100vh' }}>
       <div style={{ background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
@@ -175,29 +302,67 @@ const UserManager: React.FC = () => {
             <Link to="/">
               <Button icon={<ArrowLeftOutlined />} shape="circle" />
             </Link>
-            <Title level={2} style={{ margin: 0 }}>Quản lý người dùng (Admin)</Title>
+            <Title level={2} style={{ margin: 0 }}>Quản trị hệ thống</Title>
+            
+            <Badge count={reports.filter(r => r.status === 'pending').length}>
+              <Button 
+                shape="circle" 
+                icon={<WarningOutlined />} 
+                onClick={() => setActiveTab('2')}
+                type={reports.filter(r => r.status === 'pending').length > 0 ? "primary" : "default"}
+              />
+            </Badge>
           </Space>
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />} 
-            size="large"
-            onClick={() => {
-              setEditingUser(null);
-              form.resetFields();
-              setIsModalVisible(true);
-            }}
-          >
-            Thêm người dùng
-          </Button>
         </div>
 
-        <Table 
-          columns={columns} 
-          dataSource={users} 
-          rowKey="id" 
-          loading={loading}
-          pagination={{ pageSize: 10 }}
-        />
+        <Tabs activeKey={activeTab} onChange={setActiveTab} type="card">
+          <TabPane 
+            tab={<span><UserOutlined />Người dùng</span>} 
+            key="1"
+          >
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+              <Button 
+                type="primary" 
+                icon={<PlusOutlined />} 
+                onClick={() => {
+                  setEditingUser(null);
+                  form.resetFields();
+                  setIsModalVisible(true);
+                }}
+              >
+                Thêm người dùng
+              </Button>
+            </div>
+            <Table 
+              columns={columns} 
+              dataSource={users} 
+              rowKey="id" 
+              loading={loading}
+              pagination={{ pageSize: 10 }}
+            />
+          </TabPane>
+
+          <TabPane 
+            tab={
+              <span>
+                <WarningOutlined />
+                Tố cáo gian lận
+                {reports.filter(r => r.status === 'pending').length > 0 && (
+                  <Badge count={reports.filter(r => r.status === 'pending').length} style={{ marginLeft: 8 }} />
+                )}
+              </span>
+            } 
+            key="2"
+          >
+            <Table 
+              columns={reportColumns} 
+              dataSource={reports} 
+              rowKey="id" 
+              loading={loading}
+              pagination={{ pageSize: 10 }}
+            />
+          </TabPane>
+        </Tabs>
 
         <Modal
           title={editingUser ? "Cập nhật người dùng" : "Thêm người dùng mới"}
@@ -244,6 +409,18 @@ const UserManager: React.FC = () => {
           <UserHistoryModal 
             username={historyTarget} 
             onClose={() => setHistoryTarget(null)} 
+          />
+        )}
+
+        {punishTarget && (
+          <PunishModal
+            username={punishTarget}
+            open={!!punishTarget}
+            onClose={() => {
+              setPunishTarget(null);
+              fetchUsers();
+              fetchReports();
+            }}
           />
         )}
       </div>
