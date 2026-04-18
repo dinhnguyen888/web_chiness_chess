@@ -7,6 +7,7 @@ import {
 } from '../../models/chessSlice';
 import StartModel from './StartModel';
 import MatchHistoryModal from '../lobby/MatchHistoryModal';
+import NotificationBell from './NotificationBell';
 
 interface ButtonGroupProps {
   mode: number;
@@ -72,6 +73,7 @@ const ButtonGroup: React.FC<ButtonGroupProps> = ({ mode, side, showModel, histor
           ) : (
             <>
               <Button size='large' onClick={() => setHistoryOpen(true)}>Lịch sử đấu</Button>
+              <NotificationBell />
               <Button size='large' onClick={() => {
                 localStorage.removeItem('chess_jwt_token');
                 window.location.reload();
